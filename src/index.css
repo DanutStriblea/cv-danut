@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+/* note muzicale: urcă și se răsucesc în mai multe direcții; durată 2s */
+.note {
+  animation: noteRise 2000ms linear forwards;
+  opacity: 0.95;
+  will-change: transform, opacity;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+}
+
+/* animație principală: deplasare în sus + mic sway */
+@keyframes noteRise {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg)
+      scale(1.05);
+    opacity: 0;
+  }
+}
+
+/* mică variație între elemente cu pseudo variabile CSS (folosite din JS prin transform) */

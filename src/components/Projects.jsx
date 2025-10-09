@@ -1,5 +1,4 @@
-// src/components/Projects.jsx
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FaSpotify, FaYoutube } from "react-icons/fa";
 import logo from "../assets/logo.png";
 
@@ -22,6 +21,7 @@ const CartOutline = ({ className = "w-6 h-6 text-gray-500" }) => (
   </svg>
 );
 
+/* păstrezi proiectele exact cum erau */
 const PROJECTS = [
   {
     name: "The Broken Vinyl",
@@ -90,9 +90,78 @@ const PROJECTS = [
   },
 ];
 
+const NOTES = ["♪", "♫", "♩", "♬", "♭", "♯"];
+
 export default function Projects() {
   const [hovered, setHovered] = useState(null);
   const timeoutRef = useRef(null);
+
+  // note logic for logo only
+  const [notes, setNotes] = useState([]);
+  const spawnIntervalRef = useRef(null);
+  const cleanupTimersRef = useRef(new Set());
+
+  useEffect(() => {
+    // capturăm snapshot-urile ref în corpul efectului pentru cleanup stabil
+    const intervalSnapshot = spawnIntervalRef.current;
+    const timersSnapshot = cleanupTimersRef.current;
+    return () => {
+      if (intervalSnapshot) {
+        clearInterval(intervalSnapshot);
+      }
+      if (timersSnapshot && typeof timersSnapshot.forEach === "function") {
+        timersSnapshot.forEach((t) => clearTimeout(t));
+        timersSnapshot.clear();
+      }
+    };
+  }, []);
+
+  const createNote = () => {
+    const id = Math.random().toString(36).slice(2, 9);
+    const left = `${20 + Math.random() * 60}%`;
+    const xDrift = (Math.random() - 0.5) * 40;
+    const rotation = -30 + Math.random() * 60;
+    const size = 12 + Math.floor(Math.random() * 14);
+    const colors = [
+      "text-green-500",
+      "text-red-500",
+      "text-yellow-500",
+      "text-indigo-500",
+      "text-pink-500",
+    ];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const char = NOTES[Math.floor(Math.random() * NOTES.length)];
+
+    const note = { id, left, xDrift, rotation, size, color, char };
+    setNotes((s) => [...s, note]);
+
+    const t = setTimeout(() => {
+      setNotes((s) => s.filter((n) => n.id !== id));
+      cleanupTimersRef.current.delete(t);
+    }, 2000);
+    cleanupTimersRef.current.add(t);
+  };
+
+  const startSpawning = () => {
+    // pornește spawn continuu atâta timp cât mouse-ul e peste logo
+    if (spawnIntervalRef.current) return;
+    spawnIntervalRef.current = setInterval(createNote, 120);
+  };
+
+  const stopSpawning = () => {
+    // când mouse-ul pleacă, păstrăm notele deja create (ele se curăță la 2000ms fiecare)
+    // dar oprim generarea după 2000ms ca să păstreze efervescența încă 2s
+    if (spawnIntervalRef.current) {
+      const gracefulStop = setTimeout(() => {
+        if (spawnIntervalRef.current) {
+          clearInterval(spawnIntervalRef.current);
+          spawnIntervalRef.current = null;
+        }
+        cleanupTimersRef.current.delete(gracefulStop);
+      }, 2000);
+      cleanupTimersRef.current.add(gracefulStop);
+    }
+  };
 
   const handleEnter = (idx) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -107,7 +176,6 @@ export default function Projects() {
 
   return (
     <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg">
-      {/* Titlu */}
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 rounded px-12 py-1 shadow-lg">
         <h2 className="text-lg font-semibold font-montserrat">Proiecte</h2>
       </div>
@@ -151,13 +219,34 @@ export default function Projects() {
           </li>
         ))}
 
-        {/* Logo separat, după DanStore */}
-        <li className="flex justify-center mt-6">
+        {/* Logo separat, după DanStore — efervescența doar aici */}
+        <li
+          className="flex justify-center mt-6 relative"
+          onMouseEnter={() => startSpawning()}
+          onMouseLeave={() => stopSpawning()}
+        >
           <img
             src={logo}
             alt="DanStore Logo"
             className="w-35 h-auto object-contain filter grayscale opacity-10"
           />
+
+          {/* container note muzicale doar pentru logo */}
+          <div className="absolute inset-0 pointer-events-none overflow-visible flex items-center justify-center">
+            {notes.map((n) => (
+              <span
+                key={n.id}
+                className={`note absolute ${n.color}`}
+                style={{
+                  left: n.left,
+                  fontSize: `${n.size}px`,
+                  transform: `translateX(${n.xDrift}px) rotate(${n.rotation}deg)`,
+                }}
+              >
+                {n.char}
+              </span>
+            ))}
+          </div>
         </li>
       </ul>
     </div>
