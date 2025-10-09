@@ -1,0 +1,165 @@
+// src/components/Projects.jsx
+import React, { useState, useRef } from "react";
+import { FaSpotify, FaYoutube } from "react-icons/fa";
+import logo from "../assets/logo.png";
+
+const CartOutline = ({ className = "w-6 h-6 text-gray-500" }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M3 3h2l1.6 9.6A2 2 0 0 0 8.6 15h8.8a2 2 0 0 0 2-1.6L21 6H6" />
+    <circle cx="10" cy="20" r="1.5" />
+    <circle cx="18" cy="20" r="1.5" />
+  </svg>
+);
+
+const PROJECTS = [
+  {
+    name: "The Broken Vinyl",
+    type: "Spotify",
+    url: "https://open.spotify.com/artist/3fPcnUFKjZegfNMpx7lea3",
+    embed: (
+      <iframe
+        style={{ borderRadius: "12px" }}
+        src="https://open.spotify.com/embed/artist/3fPcnUFKjZegfNMpx7lea3?utm_source=generator"
+        className="w-full h-[352px]"
+        frameBorder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        title="Spotify Preview"
+      ></iframe>
+    ),
+    icon: <FaSpotify className="text-green-500 text-2xl" />,
+    width: "w-[500px]",
+    position: "left",
+  },
+  {
+    name: "The Broken Vinyl",
+    type: "YouTube",
+    url: "https://www.youtube.com/TheBrokenVinyl",
+    embed: (
+      <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+        <iframe
+          src="https://www.youtube.com/embed/JMm1a_4sh7Y?si=JmDzyfvzGHrYbCRi"
+          className="absolute top-0 left-0 w-full h-full"
+          title="YouTube video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        ></iframe>
+      </div>
+    ),
+    icon: <FaYoutube className="text-red-600 text-2xl" />,
+    width: "w-[500px]",
+    position: "left",
+  },
+  {
+    name: (
+      <span className="font-semibold">
+        <span className="text-green-500">Dan</span>
+        <span className="text-green-900">Store</span>
+      </span>
+    ),
+    type: "E-commerce",
+    url: "https://dan-store-lyart.vercel.app/#/",
+    embed: (
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ paddingTop: "85%" }}
+      >
+        <iframe
+          src="https://dan-store-lyart.vercel.app/#/"
+          className="absolute top-0 left-0 w-full h-full scale-98"
+          style={{ transformOrigin: "top center" }}
+          title="DanStore Preview"
+        ></iframe>
+      </div>
+    ),
+    icon: <CartOutline className="w-6 h-6 text-gray-500" />,
+    width: "w-[700px]",
+    position: "bottom-right",
+  },
+];
+
+export default function Projects() {
+  const [hovered, setHovered] = useState(null);
+  const timeoutRef = useRef(null);
+
+  const handleEnter = (idx) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setHovered(idx);
+  };
+
+  const handleLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setHovered(null);
+    }, 400);
+  };
+
+  return (
+    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg">
+      {/* Titlu */}
+      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 rounded px-12 py-1 shadow-lg">
+        <h2 className="text-lg font-semibold font-montserrat">Proiecte</h2>
+      </div>
+
+      <ul className="space-y-3 text-sm text-gray-700">
+        <div className="h-1" />
+        {PROJECTS.map((project, idx) => (
+          <li
+            key={idx}
+            className="relative cursor-pointer"
+            onMouseEnter={() => handleEnter(idx)}
+            onMouseLeave={handleLeave}
+          >
+            <a
+              href={project.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 font-semibold hover:text-green-600"
+            >
+              {project.icon}
+              {project.name}
+            </a>
+
+            {hovered === idx && (
+              <div
+                className={`absolute z-10 ${
+                  project.width
+                } bg-white shadow-lg rounded-lg p-2 ${
+                  project.position === "left"
+                    ? "top-0 right-full mr-1"
+                    : project.position === "right"
+                    ? "top-0 left-full ml-1"
+                    : project.position === "bottom-right"
+                    ? "top-full mt-2 right-0"
+                    : "top-full mt-2"
+                }`}
+              >
+                {project.embed}
+              </div>
+            )}
+          </li>
+        ))}
+
+        {/* Logo separat, după DanStore */}
+        <li className="flex justify-center mt-6">
+          <img
+            src={logo}
+            alt="DanStore Logo"
+            className="w-35 h-auto object-contain filter grayscale opacity-10"
+          />
+        </li>
+      </ul>
+    </div>
+  );
+}
