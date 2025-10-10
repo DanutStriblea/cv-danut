@@ -36,7 +36,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="flex flex-row items-start gap-10 mt-6 bg-white w-full px-20 mb-2">
+    <div className="flex flex-row items-start gap-10 mt-5.5 bg-white w-full px-22 mb-1">
       <div
         className="relative w-28 h-28 -mt-2"
         onMouseEnter={handleMouseEnter}

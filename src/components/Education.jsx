@@ -33,7 +33,7 @@ export default function Education() {
       {/* Conținutul cardului */}
       <ul className="space-y-3 text-xs text-center text-gray-500">
         {EDUCATION.map(({ years, degree, institution, details }) => (
-          <li key={degree} className="space-y-0.5">
+          <li key={degree} className="space-y-0.3">
             <p className="text-center font-semibold text-gray-400">{years}</p>
             <p className="font-bold">{degree}</p>
             <p className="italic">{institution}</p>

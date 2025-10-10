@@ -20,7 +20,7 @@ export default function Skills() {
       </div>
 
       {/* Conținutul cardului */}
-      <ul className="text-gray-600 text-xs  space-y-1.5 -mx-2">
+      <ul className="text-gray-600 text-xs  space-y-1.5 -mx-1">
         {/* Rand de spațiu la început */}
         <div className="h-1" />
         {SKILLS.map((skill) => (
