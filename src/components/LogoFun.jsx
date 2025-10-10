@@ -331,12 +331,14 @@ export default function LogoFun({
     });
 
   const onLogoMouseEnter = () => {
+    // desktop hover start audio; keep desktop-only behavior
     logoHoveredRef.current = true;
     startSpawning();
     void handleLogoMouseEnterAudio();
   };
 
   const onLogoMouseLeave = () => {
+    // desktop hover stop audio
     logoHoveredRef.current = false;
     stopSpawning();
     void handleLogoMouseLeaveAudio();
@@ -418,16 +420,28 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
+  // touch: toggle play/pause AND spin (mobile/tablet)
   const handleTouchToggle = async (e) => {
-    e.preventDefault();
+    // do not call preventDefault to avoid passive listener errors;
+    // simply stop propagation to keep click behavior isolated
+    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
     const el = logoRef.current;
     if (!el) return;
 
     const a = audioRef.current;
     if (!a) return;
 
+    // if currently playing -> fade out + stop + small spin-stop feedback
     if (isPlayingRef.current) {
       el.classList.remove("logo-spin");
+      el.offsetWidth;
+      el.classList.add("logo-spin");
+      const cleanupSpinStop = setTimeout(() => {
+        el.classList.remove("logo-spin");
+        cleanupTimersRef.current.delete(cleanupSpinStop);
+      }, 1000);
+      cleanupTimersRef.current.add(cleanupSpinStop);
+
       try {
         await fadeOutWithAudioContext(400);
       } catch (err) {
@@ -442,6 +456,7 @@ export default function LogoFun({
       return;
     }
 
+    // start spawning notes and prepare audio
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -485,6 +500,7 @@ export default function LogoFun({
       }
     }
 
+    // spin visual on touch
     el.classList.remove("logo-spin");
     // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
@@ -495,6 +511,7 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
+    // fade audio in
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -522,7 +539,6 @@ export default function LogoFun({
 
   // desktop click: visual spin only — absolutely no audio interaction here
   const handleDesktopClickSpin = (e) => {
-    // stop propagation so no other handlers react to this click
     e.preventDefault();
     e.stopPropagation();
 
@@ -545,7 +561,10 @@ export default function LogoFun({
   };
 
   return (
-    <div className={`relative flex justify-center items-center ${className}`}>
+    <div
+      className={`relative flex justify-center items-center ${className}`}
+      style={{ touchAction: "manipulation" }}
+    >
       <img
         ref={logoRef}
         src={logoSrc}
