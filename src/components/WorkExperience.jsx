@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import sharpKnifeMp3 from "../assets/SharpKnife.mp3";
 import saleSoundMp3 from "../assets/SaleSound.mp3";
+import bustedSantaMp3 from "../assets/BustedSanta.mp3";
 
 const WORKS = [
   {
@@ -48,11 +49,9 @@ const WORKS = [
 ];
 
 export default function WorkExperience() {
-  // Shared constants
-  const TARGET_VOL = 0.6;
+  const TARGET_VOL = 0.98;
   const FADE_MS = 1000;
 
-  // Refs for two audio resources
   const sharpRef = useRef({
     audio: null,
     ctx: null,
@@ -67,12 +66,18 @@ export default function WorkExperience() {
     timer: null,
     ready: false,
   });
+  const bustedRef = useRef({
+    audio: null,
+    ctx: null,
+    gain: null,
+    timer: null,
+    ready: false,
+  });
 
-  // which periods trigger which sound
   const SHARP_PERIODS = new Set(["2020–2021", "2012–2019"]);
   const SALE_PERIODS = new Set(["2010–2012", "2008–2010"]);
+  const BUSTED_PERIOD = "2010–2025";
 
-  // initialize audio elements once
   useEffect(() => {
     try {
       const a1 = new Audio(sharpKnifeMp3);
@@ -80,8 +85,8 @@ export default function WorkExperience() {
       a1.loop = true;
       a1.volume = TARGET_VOL;
       sharpRef.current.audio = a1;
-    } catch (initErr) {
-      console.warn("sharp audio init failed", initErr);
+    } catch (err) {
+      console.warn("sharp audio init failed", err);
     }
 
     try {
@@ -90,16 +95,25 @@ export default function WorkExperience() {
       a2.loop = true;
       a2.volume = TARGET_VOL;
       saleRef.current.audio = a2;
-    } catch (initErr) {
-      console.warn("sale audio init failed", initErr);
+    } catch (err) {
+      console.warn("sale audio init failed", err);
+    }
+
+    try {
+      const a3 = new Audio(bustedSantaMp3);
+      a3.preload = "metadata";
+      a3.loop = true;
+      a3.volume = TARGET_VOL;
+      bustedRef.current.audio = a3;
+    } catch (err) {
+      console.warn("busted audio init failed", err);
     }
 
     return () => {
-      // cleanup both
-      [sharpRef, saleRef].forEach((r) => {
+      [sharpRef, saleRef, bustedRef].forEach((r) => {
         try {
           if (r.current.timer) {
-            clearInterval(r.current.timer);
+            clearTimeout(r.current.timer);
             r.current.timer = null;
           }
           if (r.current.audio) {
@@ -127,7 +141,6 @@ export default function WorkExperience() {
     };
   }, []);
 
-  // helper: ensure AudioContext + GainNode for a given ref
   const ensureAudioNodes = async (refObj) => {
     if (!refObj || refObj.ready) return;
     const a = refObj.audio;
@@ -159,7 +172,6 @@ export default function WorkExperience() {
     }
   };
 
-  // helper: fallback fade using element.volume
   const fadeVolumeFallback = (refObj, target, duration = FADE_MS) =>
     new Promise((resolve) => {
       const a = refObj.audio;
@@ -205,8 +217,7 @@ export default function WorkExperience() {
       }, stepTime);
     });
 
-  // generic fade in/out using GainNode when available, otherwise fallback
-  const fadeInRef = async (refObj, duration = FADE_MS) => {
+  const fadeInRef = async (refObj, duration = FADE_MS, randomStart = false) => {
     const a = refObj.audio;
     if (!a) return;
     await ensureAudioNodes(refObj);
@@ -223,10 +234,32 @@ export default function WorkExperience() {
     }
 
     try {
-      a.currentTime = 0;
+      if (randomStart) {
+        const dur = a.duration;
+        if (!isNaN(dur) && dur > 0 && isFinite(dur)) {
+          a.currentTime = Math.random() * dur;
+        } else {
+          const onMeta = () => {
+            try {
+              a.currentTime = Math.random() * a.duration;
+            } catch (e) {
+              console.warn("random start failed after meta", e);
+            }
+            a.removeEventListener("loadedmetadata", onMeta);
+          };
+          a.addEventListener("loadedmetadata", onMeta);
+        }
+      } else {
+        try {
+          a.currentTime = 0;
+        } catch (e) {
+          console.warn("reset currentTime failed", e);
+        }
+      }
     } catch (timeErr) {
       console.warn("set currentTime failed", timeErr);
     }
+
     try {
       const p = a.play();
       if (p && typeof p.then === "function") await p;
@@ -287,17 +320,43 @@ export default function WorkExperience() {
     }
   };
 
-  // handlers: call appropriate ref for the hovered period
+  const stopOtherSounds = (exceptRef) => {
+    [sharpRef, saleRef, bustedRef].forEach((r) => {
+      const refObj = r.current;
+      if (!refObj || !refObj.audio) return;
+      if (refObj === exceptRef) return;
+      try {
+        if (refObj.timer) {
+          clearTimeout(refObj.timer);
+          refObj.timer = null;
+        }
+        refObj.audio.pause();
+        refObj.audio.currentTime = 0;
+      } catch (err) {
+        console.warn("stopOtherSounds failed", err);
+      }
+    });
+  };
+
   const handleEnter = (period) => {
     if (
       typeof window !== "undefined" &&
       ("ontouchstart" in window || navigator.maxTouchPoints > 0)
     )
       return;
+
+    if (period === BUSTED_PERIOD) {
+      stopOtherSounds(bustedRef.current);
+      void fadeInRef(bustedRef.current, FADE_MS, true);
+      return;
+    }
+
     if (SHARP_PERIODS.has(period)) {
-      void fadeInRef(sharpRef.current, FADE_MS);
+      stopOtherSounds(sharpRef.current);
+      void fadeInRef(sharpRef.current, FADE_MS, false);
     } else if (SALE_PERIODS.has(period)) {
-      void fadeInRef(saleRef.current, FADE_MS);
+      stopOtherSounds(saleRef.current);
+      void fadeInRef(saleRef.current, FADE_MS, false);
     }
   };
 
@@ -307,6 +366,12 @@ export default function WorkExperience() {
       ("ontouchstart" in window || navigator.maxTouchPoints > 0)
     )
       return;
+
+    if (period === BUSTED_PERIOD) {
+      void fadeOutRef(bustedRef.current, FADE_MS);
+      return;
+    }
+
     if (SHARP_PERIODS.has(period)) {
       void fadeOutRef(sharpRef.current, FADE_MS);
     } else if (SALE_PERIODS.has(period)) {
@@ -324,7 +389,7 @@ export default function WorkExperience() {
         {WORKS.map(({ period, role, place, details }, idx) => (
           <div
             key={idx}
-            className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left"
+            className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue"
             onMouseEnter={() => handleEnter(period)}
             onMouseLeave={() => handleLeave(period)}
           >
@@ -338,7 +403,7 @@ export default function WorkExperience() {
         ))}
 
         <div className="flex flex-col gap-3">
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
             <div className="space-y-1">
               <div>
                 <span>Engleză</span>
@@ -361,7 +426,7 @@ export default function WorkExperience() {
             </div>
           </div>
 
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
             <div className="flex items-center gap-3 text-gray-700">
               <span className="font-bold">Pasiuni:</span>
               <div className="flex gap-3 text-xl">
@@ -374,13 +439,24 @@ export default function WorkExperience() {
             </div>
           </div>
 
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
             <p className="font-bold">
               Permis auto: <span className="font-normal">Categoria B</span>
             </p>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (hover: hover) and (pointer: fine) {
+          .card-hover-blue {
+            transition: box-shadow 0.3s ease-in-out;
+          }
+          .card-hover-blue:hover {
+            box-shadow: 0 0 10px rgba(37, 85, 189, 0.308);
+          }
+        }
+      `}</style>
     </section>
   );
 }

@@ -33,19 +33,17 @@ export default function Education() {
   const userInitRef = useRef(false);
 
   useEffect(() => {
-    // create audio element but do not autoplay
     try {
       const a = new Audio(bookPagesMp3);
       a.preload = "auto";
       a.loop = true;
-      a.volume = 0.6; // default at 60%
+      a.volume = 0.6;
       audioRef.current = a;
     } catch (initErr) {
       console.warn("audio init failed", initErr);
     }
 
     return () => {
-      // cleanup
       try {
         if (fadeTimerRef.current) {
           clearInterval(fadeTimerRef.current);
@@ -74,7 +72,6 @@ export default function Education() {
     };
   }, []);
 
-  // create/resume AudioContext and gain, connect to element (only once)
   const ensureAudioContext = async () => {
     if (userInitRef.current) return;
     const a = audioRef.current;
@@ -88,7 +85,6 @@ export default function Education() {
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
       const gain = ctx.createGain();
-      // set gain to 1 (we control ramp when playing)
       gain.gain.setValueAtTime(1, ctx.currentTime);
       gainRef.current = gain;
       try {
@@ -112,11 +108,9 @@ export default function Education() {
         console.warn("resAfterTimeout callback failed", err);
       }
     }, ms);
-    // track so cleanup clears if needed
     fadeTimerRef.current = t;
   };
 
-  // fallback fade using element.volume (for browsers without AudioContext or if it fails)
   const fallbackFade = (target = "in", duration = 1000) =>
     new Promise((res) => {
       const a = audioRef.current;
@@ -161,7 +155,6 @@ export default function Education() {
   const fadeIn = async (duration = 1000) => {
     const a = audioRef.current;
     if (!a) return;
-    // ensure context exists and resumed if suspended
     try {
       await ensureAudioContext();
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -175,7 +168,6 @@ export default function Education() {
       console.warn("ensure/resume failed", err);
     }
 
-    // prepare element and start playing (some browsers require play() from user gesture)
     try {
       a.currentTime = 0;
     } catch (timeErr) {
@@ -196,7 +188,6 @@ export default function Education() {
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(0, now);
         gain.gain.linearRampToValueAtTime(0.6, now + duration / 1000);
-        // mark finish after duration
         await new Promise((resolve) => resAfterTimeout(resolve, duration + 50));
       } catch (err) {
         console.warn("gain fadeIn failed", err);
@@ -237,9 +228,7 @@ export default function Education() {
     }
   };
 
-  // desktop hover handlers
   const onMouseEnter = () => {
-    // only desktop hover should trigger; do nothing on touch devices
     if (
       typeof window !== "undefined" &&
       ("ontouchstart" in window || navigator.maxTouchPoints > 0)
@@ -259,7 +248,7 @@ export default function Education() {
 
   return (
     <div
-      className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg"
+      className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg edu-cyan-hover"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -279,6 +268,32 @@ export default function Education() {
           </li>
         ))}
       </ul>
+
+      <style>{`
+        /* keep Tailwind's shadow-lg by default (Tailwind exposes --tw-shadow) */
+        .edu-cyan-hover {
+          transition: box-shadow 220ms ease;
+        }
+
+        /* on hover: layer Tailwind's existing shadow (var(--tw-shadow)) and add a cyan-500 tint
+           using the same offset/spread pattern so layout is unchanged */
+        @media (hover: hover) and (pointer: fine) {
+          .edu-cyan-hover:hover {
+            /* Tailwind's shadow variable kept first, then cyan overlay */
+            box-shadow:
+              var(--tw-shadow),
+              0 6px 20px rgba(67, 108, 197, 0.13), /* cyan-500 (#36aaa4c8) at 18% */
+              0 2px 6px rgba(6,182,212,0.08);  /* small cyan inner tint */
+          }
+        }
+
+        /* on touch keep default Tailwind shadow */
+        @media (hover: none) and (pointer: coarse) {
+          .edu-cyan-hover {
+            box-shadow: var(--tw-shadow);
+          }
+        }
+      `}</style>
     </div>
   );
 }

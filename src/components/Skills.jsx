@@ -236,7 +236,7 @@ export default function Skills() {
 
   return (
     <div
-      className="flex-1 relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg"
+      className="flex-1 relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg skill-blue-hover"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -252,6 +252,29 @@ export default function Skills() {
           <li key={skill}>• {skill}</li>
         ))}
       </ul>
+
+      <style>{`
+        .skill-blue-hover {
+          transition: box-shadow 220ms ease;
+        }
+
+        /* doar la hover (pe desktop) */
+        @media (hover: hover) and (pointer: fine) {
+          .skill-blue-hover:hover {
+            box-shadow:
+              var(--tw-shadow),
+              0 6px 20px rgba(67, 108, 197, 0.13),
+              0 2px 6px rgba(6,182,212,0.08);
+          }
+        }
+
+        /* pe touch rămâne doar umbra implicită Tailwind */
+        @media (hover: none) and (pointer: coarse) {
+          .skill-blue-hover {
+            box-shadow: var(--tw-shadow);
+          }
+        }
+      `}</style>
     </div>
   );
 }
