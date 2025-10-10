@@ -48,7 +48,6 @@ export default function LogoFun({
 
       const el = logoRef.current;
       if (el && !logoHoveredRef.current) {
-        // two-beat heart: re-trigger class that runs the two-beat animation
         el.classList.remove("logo-beat-2");
         // force reflow
         // eslint-disable-next-line no-unused-expressions
@@ -57,7 +56,7 @@ export default function LogoFun({
         const cleanupT = setTimeout(() => {
           el.classList.remove("logo-beat-2");
           cleanupTimersRef.current.delete(cleanupT);
-        }, 1200);
+        }, 1500);
         cleanupTimersRef.current.add(cleanupT);
       }
     };
@@ -566,17 +565,17 @@ export default function LogoFun({
           100% { transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg) scale(1.05); opacity: 0; }
         }
 
-        /* two-beat heart: first stronger beat, immediate second smaller */
+        /* two-beat heart: slower and larger scale for both beats */
         @keyframes logoBeat2 {
           0%   { transform: scale(1); }
-          12%  { transform: scale(1.12); }
-          24%  { transform: scale(1); }
-          36%  { transform: scale(1.06); }
-          48%  { transform: scale(1); }
+          18%  { transform: scale(1.18); }  /* stronger first beat */
+          36%  { transform: scale(1); }
+          54%  { transform: scale(1.12); }  /* smaller second beat */
+          72%  { transform: scale(1); }
           100% { transform: scale(1); }
         }
         .logo-beat-2 {
-          animation: logoBeat2 1.1s cubic-bezier(.2,.9,.3,1) both;
+          animation: logoBeat2 1.4s cubic-bezier(.2,.9,.3,1) both;
           will-change: transform;
         }
 
