@@ -71,12 +71,12 @@ const PROJECTS = [
     url: "https://dan-store-lyart.vercel.app/#/",
     embed: (
       <div
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden popup-inner-wrapper"
         style={{ paddingTop: "85%" }}
       >
         <iframe
           src="https://dan-store-lyart.vercel.app/#/"
-          className="absolute top-0 left-0 w-full h-full scale-98"
+          className="absolute top-0 left-0 w-full h-full scale-98 popup-iframe"
           style={{ transformOrigin: "top center" }}
           title="DanStore Preview"
         />
@@ -98,9 +98,10 @@ export default function Projects() {
   };
 
   const handleLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setHovered(null);
-    }, 400);
+    }, 300);
   };
 
   return (
@@ -128,23 +129,28 @@ export default function Projects() {
               {project.name}
             </a>
 
-            {hovered === idx && (
-              <div
-                className={`absolute z-10 ${
+            {/* popup container always in DOM; animate both frame and inner content */}
+            <div
+              aria-hidden={hovered !== idx}
+              className={`
+                absolute z-10 ${
                   project.width
-                } bg-white shadow-lg rounded-lg p-2 ${
-                  project.position === "left"
-                    ? "top-0 right-full mr-1"
-                    : project.position === "right"
-                    ? "top-0 left-full ml-1"
-                    : project.position === "bottom-right"
+                } bg-white rounded-lg overflow-hidden
+                ${project.position === "left" ? "top-0 right-full mr-1" : ""}
+                ${project.position === "right" ? "top-0 left-full ml-1" : ""}
+                ${
+                  project.position === "bottom-right"
                     ? "top-full mt-2 right-0"
-                    : "top-full mt-2"
-                }`}
-              >
-                {project.embed}
-              </div>
-            )}
+                    : ""
+                }
+                ${project.position === undefined ? "top-full mt-2" : ""}
+                popup-frame
+                ${hovered === idx ? "popup-visible" : "popup-hidden"}
+              `}
+            >
+              <div className="popup-frame-shadow" />
+              <div className="popup-content">{project.embed}</div>
+            </div>
           </li>
         ))}
 
@@ -154,8 +160,55 @@ export default function Projects() {
       </ul>
 
       <style>{`
-        /* small helper: keep visual consistency if logo import used elsewhere */
         .w-35 { width: 140px; }
+
+        /* Frame + content transitions */
+        .popup-frame {
+          transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 360ms cubic-bezier(.2,.9,.3,1), box-shadow 360ms;
+          transform-origin: top center;
+          opacity: 0;
+          transform: translateY(6px) scale(0.98);
+          pointer-events: none;
+          box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+          border-radius: 10px;
+        }
+
+        .popup-visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          pointer-events: auto;
+          box-shadow: 0 14px 40px rgba(2,6,23,0.12);
+        }
+
+        .popup-hidden {
+          opacity: 0;
+          transform: translateY(6px) scale(0.98);
+          pointer-events: none;
+        }
+
+        /* Inner content fades a bit later for smoother feel */
+        .popup-content {
+          transition: opacity 320ms cubic-bezier(.2,.9,.3,1) 80ms, transform 320ms cubic-bezier(.2,.9,.3,1) 80ms;
+          opacity: 0;
+          transform: translateY(6px) scale(0.995);
+        }
+        .popup-visible .popup-content {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+
+        /* small drop shadow element to visually separate frame from content (optional) */
+        .popup-frame-shadow {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        /* responsive tweaks */
+        @media (max-width: 640px) {
+          .w-[500px] { width: 90vw; }
+          .w-[700px] { width: 95vw; }
+        }
       `}</style>
     </div>
   );
