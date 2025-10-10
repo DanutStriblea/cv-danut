@@ -43,7 +43,8 @@ const PROJECTS = [
   },
   {
     name: "The Broken Vinyl",
-    url: "https://www.youtube.com/TheBrokenVinyl",
+    // updated to the channel URL you provided
+    url: "https://www.youtube.com/channel/UC8MdjvdBFYWYMWFU6fKHWlg",
     embed: (
       <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
         <iframe
