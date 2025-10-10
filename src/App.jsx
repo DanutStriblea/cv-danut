@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 import Header1 from "./components/Header1";
 import Contact from "./components/Contact";
@@ -52,6 +51,7 @@ export default function App() {
       window.removeEventListener("resize", recomputeScales);
       observer.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentScale, frameHeight, frameWidth]);
 
   // compensăm dimensiunile pentru a elimina spațiul din dreapta
@@ -112,10 +112,12 @@ export default function App() {
       {/* Stiluri pentru print */}
       <style>{`
         @media print {
+          /* mică margine @page pentru a oferi spațiu antet/footer sistem */
           @page {
             size: A4;
-            margin: 0;
+            margin: 4mm;
           }
+
           html, body {
             width: 210mm;
             height: 297mm;
@@ -123,25 +125,52 @@ export default function App() {
             padding: 0;
             overflow: hidden;
           }
+
           body {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
+
           body > div {
             display: block !important;
             height: 100%;
           }
+
           .print-frame-scaler {
             transform: none !important;
             margin: 0 !important;
             width: 100% !important;
             height: 100% !important;
           }
+
           .a4-frame {
             box-shadow: none !important;
             width: 100% !important;
             height: 100% !important;
             overflow: hidden !important;
+          }
+
+          /* reducere ușoară pentru dispozitive mobile la print (iPhone) */
+          /* ajustați valorile dacă e nevoie: 0.84 = 84% */
+          @media print and (max-device-width: 900px) {
+            /* Aplicăm o scalare ușoară doar la print pe ecrane mici */
+            .a4-frame > div {
+              transform-origin: top left !important;
+              transform: scale(0.92) !important;
+            }
+            /* reduce padding intern vizibil doar la print */
+            .a4-frame .px-6 { padding-left: 6px !important; padding-right: 6px !important; }
+            .a4-frame .pt-4 { padding-top: 6px !important; }
+            .a4-frame .pb-2 { padding-bottom: 6px !important; }
+          }
+
+          /* Elemente care pot încă să streseze layout-ul - ascundeți dacă nu sunt necesare */
+          .no-print { display: none !important; }
+
+          /* evită page breaks în interiorul secțiunilor mari */
+          .no-break, .section, .project {
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
         }
       `}</style>

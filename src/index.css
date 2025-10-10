@@ -26,3 +26,23 @@
 }
 
 /* mică variație între elemente cu pseudo variabile CSS (folosite din JS prin transform) */
+
+/* print tweaks: tighter defaults so iOS/Safari print headers/footers don't force extra page */
+@media print and (max-device-width: 900px) {
+  /* reduce font-size ușor la print pe mobile */
+  html,
+  body {
+    font-size: 92%;
+  }
+
+  /* dacă ai imagini mari în header/profile, limitează-le */
+  .a4-frame img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* dacă ai grid cu 3 coloane care caută spațiu, forțăm o ușoară compactare la print */
+  .grid.grid-cols-3 {
+    gap: 8px !important;
+  }
+}
