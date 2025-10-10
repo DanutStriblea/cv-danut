@@ -64,7 +64,7 @@ export default function LogoFun({
     try {
       const initial = setTimeout(periodicBurst, 700);
       cleanupTimersRef.current.add(initial);
-      periodicRef.current = setInterval(periodicBurst, 10000); // 10s
+      periodicRef.current = setInterval(periodicBurst, 10000);
     } catch (err) {
       console.warn("periodic setup failed", err);
     }
@@ -91,8 +91,8 @@ export default function LogoFun({
         if (audioCtxRef.current) {
           try {
             audioCtxRef.current.close();
-          } catch (err) {
-            console.warn("audio context close failed", err);
+          } catch (closeErr) {
+            console.warn("audio context close failed", closeErr);
           }
           audioCtxRef.current = null;
           gainRef.current = null;
@@ -102,7 +102,6 @@ export default function LogoFun({
         console.warn("cleanup failed", cleanupOuterErr);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createNote = () => {
@@ -177,8 +176,8 @@ export default function LogoFun({
         try {
           if (audioCtxRef.current.state === "suspended")
             await audioCtxRef.current.resume();
-        } catch (err) {
-          console.warn("resume failed", err);
+        } catch (resumeErr) {
+          console.warn("resume failed", resumeErr);
         }
         return;
       }
@@ -194,8 +193,8 @@ export default function LogoFun({
         const source = ctx.createMediaElementSource(a);
         sourceRef.current = source;
         source.connect(gain).connect(ctx.destination);
-      } catch (err) {
-        console.warn("createMediaElementSource failed", err);
+      } catch (sourceErr) {
+        console.warn("createMediaElementSource failed", sourceErr);
       }
 
       userGestureInitializedRef.current = true;
@@ -246,8 +245,8 @@ export default function LogoFun({
           try {
             a.pause();
             a.currentTime = 0;
-          } catch (err) {
-            console.warn("pause after fadeOut failed", err);
+          } catch (pauseErr) {
+            console.warn("pause after fadeOut failed", pauseErr);
           }
           res();
         }, duration + 50);
@@ -279,16 +278,16 @@ export default function LogoFun({
         const newVol = Math.min(1, frac);
         try {
           a.volume = newVol;
-        } catch (err) {
-          console.warn("volume set failed during fallback fade-in", err);
+        } catch (volErr) {
+          console.warn("volume set failed during fallback fade-in", volErr);
         }
         if (currentStep >= steps) {
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
           try {
             a.volume = 1;
-          } catch (err) {
-            console.warn("final volume set failed", err);
+          } catch (finalErr) {
+            console.warn("final volume set failed", finalErr);
           }
           res();
         }
@@ -313,8 +312,8 @@ export default function LogoFun({
         const newVol = Math.max(0, startVol * (1 - frac));
         try {
           a.volume = newVol;
-        } catch (err) {
-          console.warn("volume set failed during fallback fade-out", err);
+        } catch (volErr) {
+          console.warn("volume set failed during fallback fade-out", volErr);
         }
         if (currentStep >= steps) {
           clearInterval(fadeIntervalRef.current);
@@ -323,8 +322,8 @@ export default function LogoFun({
             a.pause();
             a.currentTime = 0;
             a.volume = 1;
-          } catch (err) {
-            console.warn("audio stop/reset failed", err);
+          } catch (stopErr) {
+            console.warn("audio stop/reset failed", stopErr);
           }
           res();
         }
@@ -409,7 +408,12 @@ export default function LogoFun({
     try {
       await fadeOutWithAudioContext(400);
     } catch (err) {
-      await fallbackFadeOut(400);
+      console.warn("fade out failed on mouseleave", err);
+      try {
+        await fallbackFadeOut(400);
+      } catch (fallbackErr) {
+        console.warn("fallback fadeOut also failed", fallbackErr);
+      }
     }
     isPlayingRef.current = false;
   };
@@ -424,27 +428,20 @@ export default function LogoFun({
 
     if (isPlayingRef.current) {
       el.classList.remove("logo-spin");
-      el.classList.remove("logo-beat-2");
-      // small spin feedback for stop
-      // eslint-disable-next-line no-unused-expressions
-      el.offsetWidth;
-      el.classList.add("logo-spin");
-      const cleanupSpinStop = setTimeout(() => {
-        el.classList.remove("logo-spin");
-        cleanupTimersRef.current.delete(cleanupSpinStop);
-      }, 1000);
-      cleanupTimersRef.current.add(cleanupSpinStop);
-
       try {
         await fadeOutWithAudioContext(400);
       } catch (err) {
-        await fallbackFadeOut(400);
+        console.warn("fadeOut failed on touch stop", err);
+        try {
+          await fallbackFadeOut(400);
+        } catch (fallbackErr) {
+          console.warn("fallback fadeOut failed on touch stop", fallbackErr);
+        }
       }
       isPlayingRef.current = false;
       return;
     }
 
-    // Start: user gesture - try immediate play
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -488,7 +485,6 @@ export default function LogoFun({
       }
     }
 
-    // mobile: apply spin (coin) animation instead of zoom, 1s
     el.classList.remove("logo-spin");
     // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
@@ -499,7 +495,6 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
-    // start fade (AudioContext preferred)
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -515,10 +510,38 @@ export default function LogoFun({
         isPlayingRef.current = true;
       }
     } catch (err) {
-      console.warn("fade start failed", err);
-      await fallbackFadeIn(1000);
-      isPlayingRef.current = true;
+      console.warn("fade start failed on touch start", err);
+      try {
+        await fallbackFadeIn(1000);
+        isPlayingRef.current = true;
+      } catch (fallbackErr) {
+        console.warn("fallback fadeIn failed on touch start", fallbackErr);
+      }
     }
+  };
+
+  // desktop click: visual spin only — absolutely no audio interaction here
+  const handleDesktopClickSpin = (e) => {
+    // stop propagation so no other handlers react to this click
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isTouchRef.current) return;
+    const el = logoRef.current;
+    if (!el) return;
+
+    // purely visual spin; do not touch audioRef or isPlayingRef
+    el.classList.remove("logo-spin");
+    // force reflow to retrigger animation
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetWidth;
+    el.classList.add("logo-spin");
+
+    const cleanup = setTimeout(() => {
+      el.classList.remove("logo-spin");
+      cleanupTimersRef.current.delete(cleanup);
+    }, 1000);
+    cleanupTimersRef.current.add(cleanup);
   };
 
   return (
@@ -531,6 +554,7 @@ export default function LogoFun({
         onMouseEnter={!isTouchRef.current ? onLogoMouseEnter : undefined}
         onMouseLeave={!isTouchRef.current ? onLogoMouseLeave : undefined}
         onTouchStart={isTouchRef.current ? handleTouchToggle : undefined}
+        onClick={!isTouchRef.current ? handleDesktopClickSpin : undefined}
       />
 
       <div
@@ -568,9 +592,9 @@ export default function LogoFun({
         /* two-beat heart: slower and larger scale for both beats */
         @keyframes logoBeat2 {
           0%   { transform: scale(1); }
-          18%  { transform: scale(1.18); }  /* stronger first beat */
+          18%  { transform: scale(1.18); }
           36%  { transform: scale(1); }
-          54%  { transform: scale(1.12); }  /* smaller second beat */
+          54%  { transform: scale(1.12); }
           72%  { transform: scale(1); }
           100% { transform: scale(1); }
         }
@@ -579,7 +603,7 @@ export default function LogoFun({
           will-change: transform;
         }
 
-        /* spin like a coin on mobile touch (1s) */
+        /* spin like a coin on mobile touch (1s) and desktop click visual only */
         @keyframes logoSpin {
           0% { transform: rotateY(0deg); }
           100% { transform: rotateY(360deg); }
