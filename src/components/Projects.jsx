@@ -1,6 +1,8 @@
+// src/components/Projects.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { FaSpotify, FaYoutube } from "react-icons/fa";
 import logo from "../assets/logo.png";
+import audioFile from "../assets/DrinksAndFlowers.mp3";
 
 const CartOutline = ({ className = "w-6 h-6 text-gray-500" }) => (
   <svg
@@ -21,11 +23,9 @@ const CartOutline = ({ className = "w-6 h-6 text-gray-500" }) => (
   </svg>
 );
 
-/* păstrezi proiectele exact cum erau */
 const PROJECTS = [
   {
     name: "The Broken Vinyl",
-    type: "Spotify",
     url: "https://open.spotify.com/artist/3fPcnUFKjZegfNMpx7lea3",
     embed: (
       <iframe
@@ -36,7 +36,7 @@ const PROJECTS = [
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         loading="lazy"
         title="Spotify Preview"
-      ></iframe>
+      />
     ),
     icon: <FaSpotify className="text-green-500 text-2xl" />,
     width: "w-[500px]",
@@ -44,7 +44,6 @@ const PROJECTS = [
   },
   {
     name: "The Broken Vinyl",
-    type: "YouTube",
     url: "https://www.youtube.com/TheBrokenVinyl",
     embed: (
       <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
@@ -55,7 +54,7 @@ const PROJECTS = [
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
-        ></iframe>
+        />
       </div>
     ),
     icon: <FaYoutube className="text-red-600 text-2xl" />,
@@ -81,7 +80,7 @@ const PROJECTS = [
           className="absolute top-0 left-0 w-full h-full scale-98"
           style={{ transformOrigin: "top center" }}
           title="DanStore Preview"
-        ></iframe>
+        />
       </div>
     ),
     icon: <CartOutline className="w-6 h-6 text-gray-500" />,
@@ -94,25 +93,78 @@ const NOTES = ["♪", "♫", "♩", "♬", "♭", "♯"];
 
 export default function Projects() {
   const [hovered, setHovered] = useState(null);
+  const [notes, setNotes] = useState([]);
+
+  const spawnIntervalRef = useRef(null);
+  const periodicRef = useRef(null);
+  const cleanupTimersRef = useRef(new Set());
   const timeoutRef = useRef(null);
 
-  // note logic for logo only
-  const [notes, setNotes] = useState([]);
-  const spawnIntervalRef = useRef(null);
-  const cleanupTimersRef = useRef(new Set());
+  const audioRef = useRef(null);
+  const fadeIntervalRef = useRef(null);
+
+  const logoRef = useRef(null);
+  const logoHoveredRef = useRef(false);
 
   useEffect(() => {
-    // capturăm snapshot-urile ref în corpul efectului pentru cleanup stabil
-    const intervalSnapshot = spawnIntervalRef.current;
+    // initialize audio safely
+    try {
+      const a = new Audio(audioFile);
+      a.preload = "auto";
+      a.loop = false;
+      a.volume = 1;
+      audioRef.current = a;
+    } catch (initErr) {
+      console.warn("audio init failed", initErr);
+    }
+
+    // periodic burst and synchronized pulse every 10s
+    const periodicBurst = () => {
+      const burstCount = 5;
+      for (let i = 0; i < burstCount; i++) {
+        const t = setTimeout(() => createNote(), i * 120);
+        cleanupTimersRef.current.add(t);
+      }
+
+      const el = logoRef.current;
+      if (el && !logoHoveredRef.current) {
+        el.classList.remove("logo-pulse");
+        // force reflow to retrigger
+
+        el.offsetWidth;
+        el.classList.add("logo-pulse");
+        const cleanupT = setTimeout(() => {
+          el.classList.remove("logo-pulse");
+          cleanupTimersRef.current.delete(cleanupT);
+        }, 950);
+        cleanupTimersRef.current.add(cleanupT);
+      }
+    };
+
+    const initial = setTimeout(periodicBurst, 700);
+    cleanupTimersRef.current.add(initial);
+    periodicRef.current = setInterval(periodicBurst, 10000); // 10s
+
+    // snapshots for cleanup closure
     const timersSnapshot = cleanupTimersRef.current;
+    const periodicSnapshot = periodicRef.current;
+    const spawnSnapshot = spawnIntervalRef.current;
+
     return () => {
-      if (intervalSnapshot) {
-        clearInterval(intervalSnapshot);
+      if (periodicSnapshot) clearInterval(periodicSnapshot);
+      if (spawnSnapshot) clearInterval(spawnSnapshot);
+      timersSnapshot.forEach((t) => clearTimeout(t));
+      timersSnapshot.clear();
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        } catch (cleanupErr) {
+          console.warn("audio cleanup warning", cleanupErr);
+        }
       }
-      if (timersSnapshot && typeof timersSnapshot.forEach === "function") {
-        timersSnapshot.forEach((t) => clearTimeout(t));
-        timersSnapshot.clear();
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -143,24 +195,130 @@ export default function Projects() {
   };
 
   const startSpawning = () => {
-    // pornește spawn continuu atâta timp cât mouse-ul e peste logo
     if (spawnIntervalRef.current) return;
     spawnIntervalRef.current = setInterval(createNote, 120);
   };
 
   const stopSpawning = () => {
-    // când mouse-ul pleacă, păstrăm notele deja create (ele se curăță la 2000ms fiecare)
-    // dar oprim generarea după 2000ms ca să păstreze efervescența încă 2s
     if (spawnIntervalRef.current) {
       const gracefulStop = setTimeout(() => {
-        if (spawnIntervalRef.current) {
-          clearInterval(spawnIntervalRef.current);
-          spawnIntervalRef.current = null;
+        try {
+          if (spawnIntervalRef.current) {
+            clearInterval(spawnIntervalRef.current);
+            spawnIntervalRef.current = null;
+          }
+        } catch (stopErr) {
+          console.warn("stopSpawning failed", stopErr);
         }
         cleanupTimersRef.current.delete(gracefulStop);
       }, 2000);
       cleanupTimersRef.current.add(gracefulStop);
     }
+  };
+
+  const handleLogoMouseEnterAudio = async () => {
+    const a = audioRef.current;
+    if (!a) return;
+
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+
+    await new Promise((res) => {
+      if (!isNaN(a.duration) && a.duration > 0) return res();
+      const onLoaded = () => {
+        a.removeEventListener("loadedmetadata", onLoaded);
+        res();
+      };
+      a.addEventListener("loadedmetadata", onLoaded);
+      const fallback = setTimeout(() => {
+        a.removeEventListener("loadedmetadata", onLoaded);
+        res();
+      }, 1000);
+      cleanupTimersRef.current.add(fallback);
+    });
+
+    const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
+    const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
+    const randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
+    try {
+      a.currentTime = randomStart;
+    } catch (timeErr) {
+      console.warn("set currentTime failed", timeErr);
+    }
+
+    try {
+      a.volume = 0;
+    } catch (volErr) {
+      console.warn("set volume failed", volErr);
+    }
+
+    const playPromise = a.play();
+    if (playPromise && typeof playPromise.catch === "function")
+      playPromise.catch(() => {});
+
+    const fadeDuration = 1000;
+    const steps = 20;
+    const stepTime = Math.max(10, Math.floor(fadeDuration / steps));
+    let currentStep = 0;
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const frac = currentStep / steps;
+      const newVol = Math.min(1, frac);
+      try {
+        a.volume = newVol;
+      } catch (err) {
+        console.warn("volume set failed during fade-in", err);
+      }
+      if (currentStep >= steps) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+        try {
+          a.volume = 1;
+        } catch (err) {
+          console.warn("final volume set failed", err);
+        }
+      }
+    }, stepTime);
+  };
+
+  const handleLogoMouseLeaveAudio = () => {
+    const a = audioRef.current;
+    if (!a) return;
+
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+
+    const fadeDuration = 1000;
+    const steps = 20;
+    const stepTime = Math.max(10, Math.floor(fadeDuration / steps));
+    let currentStep = 0;
+    const startVol = typeof a.volume === "number" ? a.volume : 1;
+
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const frac = currentStep / steps;
+      const newVol = Math.max(0, startVol * (1 - frac));
+      try {
+        a.volume = newVol;
+      } catch (err) {
+        console.warn("volume set failed during fade-out", err);
+      }
+      if (currentStep >= steps) {
+        clearInterval(fadeIntervalRef.current);
+        fadeIntervalRef.current = null;
+        try {
+          a.pause();
+          a.currentTime = 0;
+          a.volume = 1;
+        } catch (err) {
+          console.warn("audio stop/reset failed", err);
+        }
+      }
+    }, stepTime);
   };
 
   const handleEnter = (idx) => {
@@ -172,6 +330,18 @@ export default function Projects() {
     timeoutRef.current = setTimeout(() => {
       setHovered(null);
     }, 400);
+  };
+
+  const onLogoMouseEnter = () => {
+    logoHoveredRef.current = true;
+    startSpawning();
+    handleLogoMouseEnterAudio();
+  };
+
+  const onLogoMouseLeave = () => {
+    logoHoveredRef.current = false;
+    stopSpawning();
+    handleLogoMouseLeaveAudio();
   };
 
   return (
@@ -219,19 +389,18 @@ export default function Projects() {
           </li>
         ))}
 
-        {/* Logo separat, după DanStore — efervescența doar aici */}
         <li
           className="flex justify-center mt-6 relative"
-          onMouseEnter={() => startSpawning()}
-          onMouseLeave={() => stopSpawning()}
+          onMouseEnter={onLogoMouseEnter}
+          onMouseLeave={onLogoMouseLeave}
         >
           <img
+            ref={logoRef}
             src={logo}
             alt="DanStore Logo"
-            className="w-35 h-auto object-contain filter  opacity-50"
+            className="w-35 h-auto object-contain filter opacity-50 cursor-pointer"
           />
 
-          {/* container note muzicale doar pentru logo */}
           <div className="absolute inset-0 pointer-events-none overflow-visible flex items-center justify-center">
             {notes.map((n) => (
               <span
@@ -249,6 +418,40 @@ export default function Projects() {
           </div>
         </li>
       </ul>
+
+      <style>{`
+        .note {
+          animation: noteRise 2000ms linear forwards;
+          opacity: 0.95;
+          will-change: transform, opacity;
+          text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+        }
+        @keyframes noteRise {
+          0% {
+            transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+            opacity: 1;
+          }
+          30% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg) scale(1.05);
+            opacity: 0;
+          }
+        }
+
+        @keyframes logoPulse {
+          0% { transform: scale(1); }
+          30% { transform: scale(1.08); }
+          60% { transform: scale(0.98); }
+          100% { transform: scale(1); }
+        }
+        .logo-pulse {
+          animation: logoPulse 900ms cubic-bezier(.2,.9,.3,1) both;
+          will-change: transform;
+        }
+      `}</style>
     </div>
   );
 }

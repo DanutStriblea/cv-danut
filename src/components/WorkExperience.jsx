@@ -71,7 +71,7 @@ export default function WorkExperience() {
         <div className="flex flex-col gap-3">
           {/* Card - Engleză/Italiană/Spaniolă */}
 
-          <div className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
             <div className="space-y-1">
               <div>
                 <span>Engleză</span>
@@ -95,7 +95,7 @@ export default function WorkExperience() {
           </div>
 
           {/* Pasiuni */}
-          <div className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
             <div className="flex items-center gap-3 text-gray-700">
               <span className="font-bold">Pasiuni:</span>
               <div className="flex gap-3 text-xl">
@@ -109,7 +109,7 @@ export default function WorkExperience() {
           </div>
 
           {/* Permis auto */}
-          <div className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left">
             <p className="font-bold">
               Permis auto: <span className="font-normal">Categoria B</span>
             </p>
