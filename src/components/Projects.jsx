@@ -228,7 +228,7 @@ export default function Projects() {
           <img
             src={logo}
             alt="DanStore Logo"
-            className="w-35 h-auto object-contain filter grayscale opacity-10"
+            className="w-35 h-auto object-contain filter  opacity-50"
           />
 
           {/* container note muzicale doar pentru logo */}
