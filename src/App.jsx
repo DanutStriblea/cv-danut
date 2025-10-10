@@ -7,10 +7,12 @@ import Education from "./components/Education";
 import Skills from "./components/Skills";
 import Projects from "./components/Projects";
 import WorkExperience from "./components/WorkExperience";
+import ZoomControls from "./components/ZoomControls";
 
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
   const contentRef = useRef(null);
 
   const frameWidth = 794; // A4 width px
@@ -18,7 +20,6 @@ export default function App() {
 
   useEffect(() => {
     const recomputeScales = () => {
-      // Scale for fitting content inside A4
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
         const newContentScale = Math.min(1, frameHeight / contentHeight);
@@ -27,18 +28,15 @@ export default function App() {
         }
       }
 
-      // Scale for fitting A4 frame in viewport
       const scaleToWidth = (window.innerWidth - 32) / frameWidth;
       const scaleToHeight = (window.innerHeight - 32) / frameHeight;
       const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
       setFrameScale(newFrameScale);
     };
 
-    // Recompute on mount and on content changes
     recomputeScales();
     window.addEventListener("resize", recomputeScales);
 
-    // Use a MutationObserver to detect content changes
     const observer = new MutationObserver(recomputeScales);
     if (contentRef.current) {
       observer.observe(contentRef.current, {
@@ -54,9 +52,22 @@ export default function App() {
     };
   }, [contentScale, frameHeight, frameWidth]);
 
-  // compensăm dimensiunile pentru a elimina spațiul din dreapta
   const compensatedWidth = frameWidth / contentScale;
   const compensatedHeight = frameHeight / contentScale;
+
+  const ZOOM_STEP = 0.15;
+  const handleZoomIn = () =>
+    setUserZoom((z) => {
+      const next = +(z * (1 + ZOOM_STEP)).toFixed(4);
+      return Math.min(3, next);
+    });
+  const handleZoomOut = () =>
+    setUserZoom((z) => {
+      const next = +(z / (1 + ZOOM_STEP)).toFixed(4);
+      return Math.max(0.25, next);
+    });
+
+  const combinedScale = frameScale * userZoom;
 
   return (
     <div
@@ -68,8 +79,9 @@ export default function App() {
       <div
         className="mx-auto print-frame-scaler"
         style={{
-          transform: `scale(${frameScale})`,
+          transform: `scale(${combinedScale})`,
           transformOrigin: "top center",
+          position: "relative",
         }}
       >
         {/* Rama A4 */}
@@ -109,13 +121,14 @@ export default function App() {
         </div>
       </div>
 
+      {/* IMPORTANT: ZoomControls is OUTSIDE .print-frame-scaler (sibling),
+          so position:fixed will be relative to viewport and not affected by scale */}
+      <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+
       {/* Stiluri pentru print */}
       <style>{`
         @media print {
-          @page {
-            size: A4;
-            margin: 0;
-          }
+          @page { size: A4; margin: 0; }
           html, body {
             width: 210mm;
             height: 297mm;
@@ -127,23 +140,18 @@ export default function App() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          body > div {
-            display: block !important;
-            height: 100%;
-          }
-          .print-frame-scaler {
-            transform: none !important;
-            margin: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-          }
-          .a4-frame {
-            box-shadow: none !important;
-            width: 100% !important;
-            height: 100% !important;
-            overflow: hidden !important;
-          }
+          body > div { display: block !important; height: 100%; }
+          .print-frame-scaler { transform: none !important; margin: 0 !important; width: 100% !important; height: 100% !important; }
+          .a4-frame { box-shadow: none !important; width: 100% !important; height: 100% !important; overflow: hidden !important; }
+          /* hide zoom controls at print */
+          .zoom-controls, .zoom-controls-outside { display: none !important; }
         }
+
+        /* ensure wrapper scales cleanly */
+        .print-frame-scaler { display: inline-block; box-sizing: border-box; }
+
+        /* safety: keep touch gestures available */
+        html, body { -webkit-text-size-adjust: 100%; }
       `}</style>
     </div>
   );

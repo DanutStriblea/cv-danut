@@ -9,7 +9,6 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
-/* animație principală: deplasare în sus + mic sway */
 @keyframes noteRise {
   0% {
     transform: translateY(0) translateX(0) rotate(0deg) scale(1);
@@ -25,4 +24,29 @@
   }
 }
 
-/* mică variație între elemente cu pseudo variabile CSS (folosite din JS prin transform) */
+/* safety: ensure inline wrapper behaves well when scaled */
+.print-frame-scaler {
+  display: inline-block;
+  box-sizing: border-box; /* ajută la calcule de dimensiune când se scalează */
+}
+
+/* keep touch gestures available */
+html,
+body {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* minimal hook if needed */
+.zoom-controls {
+  pointer-events: auto;
+}
+
+/* ensure the outside variant also has pointer-events if needed */
+.zoom-controls-outside {
+  pointer-events: auto;
+}
+
+/* If ZoomControls.jsx uses these classes ensure no conflict */
+.a4-frame {
+  position: relative;
+}
