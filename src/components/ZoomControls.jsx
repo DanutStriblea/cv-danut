@@ -5,7 +5,7 @@ export default function ZoomControls({ onZoomIn, onZoomOut }) {
   const rootRef = useRef(null);
   const rafRef = useRef(null);
 
-  const BUTTON_W = 44; // dimensiune desktop
+  const BUTTON_W = 44; // desktop
   const BUTTON_H = 44;
   const OUTER_MARGIN = 12; // distanța față de A4
   const MIN_VIEWPORT_MARGIN = 8;
@@ -52,7 +52,7 @@ export default function ZoomControls({ onZoomIn, onZoomOut }) {
       if (vw <= 900) {
         // Mobile: orizontal, imediat sub pagina A4
         const topPx = Math.round(frameRect.bottom + OUTER_MARGIN);
-        setStyleImportant(el, "position", "fixed");
+        setStyleImportant(el, "position", "absolute"); // fix elastic behavior
         setStyleImportant(el, "left", "50%");
         setStyleImportant(el, "transform", "translateX(-50%)");
         setStyleImportant(el, "top", `${topPx}px`);
@@ -123,13 +123,9 @@ export default function ZoomControls({ onZoomIn, onZoomOut }) {
           userSelect: "none",
         }}
       >
-        {/* Desktop vertical: plus deasupra minus */}
         <button
           className="zoom-btn zoom-plus"
-          onClick={(e) => {
-            onZoomIn();
-            e.currentTarget.blur();
-          }}
+          onClick={onZoomIn}
           aria-label="Zoom in"
           title="Zoom in"
         >
@@ -137,10 +133,7 @@ export default function ZoomControls({ onZoomIn, onZoomOut }) {
         </button>
         <button
           className="zoom-btn zoom-minus"
-          onClick={(e) => {
-            onZoomOut();
-            e.currentTarget.blur();
-          }}
+          onClick={onZoomOut}
           aria-label="Zoom out"
           title="Zoom out"
         >
@@ -178,17 +171,32 @@ export default function ZoomControls({ onZoomIn, onZoomOut }) {
           box-shadow: 0 6px 12px rgba(2,6,23,0.18);
         }
 
-        .zoom-btn:focus { outline: none; } /* elimină bordura de focus */
+        .zoom-btn:focus { outline: none; }
 
         .zoom-plus { background: #e6eef7; }
         .zoom-minus { background: #f1f5f9; }
 
         @media (max-width: 900px) {
           /* Orizontal mobile imediat sub A4 */
-          .zoom-controls { flex-direction: row !important; gap: 12px; }
-          .zoom-btn { width: 48px; height: 48px; font-size: 28px; }
+          .zoom-controls {
+            flex-direction: row !important;
+            gap: 12px;
+            position: absolute !important;
+            left: 50%;
+            transform: translateX(-50%);
+          }
+          .zoom-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 28px;
+          }
           .zoom-minus { order: 1; }
           .zoom-plus { order: 2; }
+
+          .zoom-btn:active {
+            transform: scale(1); /* revine imediat */
+            box-shadow: 0 8px 20px rgba(2,6,23,0.18);
+          }
         }
 
         @media print {
