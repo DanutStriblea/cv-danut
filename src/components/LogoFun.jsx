@@ -48,15 +48,16 @@ export default function LogoFun({
 
       const el = logoRef.current;
       if (el && !logoHoveredRef.current) {
-        el.classList.remove("logo-pulse");
-        // force reflow to retrigger
+        // two-beat heart: re-trigger class that runs the two-beat animation
+        el.classList.remove("logo-beat-2");
+        // force reflow
         // eslint-disable-next-line no-unused-expressions
         el.offsetWidth;
-        el.classList.add("logo-pulse");
+        el.classList.add("logo-beat-2");
         const cleanupT = setTimeout(() => {
-          el.classList.remove("logo-pulse");
+          el.classList.remove("logo-beat-2");
           cleanupTimersRef.current.delete(cleanupT);
-        }, 950);
+        }, 1200);
         cleanupTimersRef.current.add(cleanupT);
       }
     };
@@ -161,7 +162,6 @@ export default function LogoFun({
     cleanupTimersRef.current.add(t);
   };
 
-  // ensure AudioContext and MediaElementSource; do not create MediaElementSource more than once
   const ensureAudioContext = async () => {
     if (userGestureInitializedRef.current) return;
     const a = audioRef.current;
@@ -332,7 +332,6 @@ export default function LogoFun({
       }, stepTime);
     });
 
-  // desktop hover handlers
   const onLogoMouseEnter = () => {
     logoHoveredRef.current = true;
     startSpawning();
@@ -416,7 +415,6 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
-  // mobile touch toggle
   const handleTouchToggle = async (e) => {
     e.preventDefault();
     const el = logoRef.current;
@@ -426,15 +424,17 @@ export default function LogoFun({
     if (!a) return;
 
     if (isPlayingRef.current) {
-      el.classList.remove("logo-pulse");
+      el.classList.remove("logo-spin");
+      el.classList.remove("logo-beat-2");
+      // small spin feedback for stop
       // eslint-disable-next-line no-unused-expressions
       el.offsetWidth;
-      el.classList.add("logo-pulse");
-      const cleanupT = setTimeout(() => {
-        el.classList.remove("logo-pulse");
-        cleanupTimersRef.current.delete(cleanupT);
-      }, 450);
-      cleanupTimersRef.current.add(cleanupT);
+      el.classList.add("logo-spin");
+      const cleanupSpinStop = setTimeout(() => {
+        el.classList.remove("logo-spin");
+        cleanupTimersRef.current.delete(cleanupSpinStop);
+      }, 1000);
+      cleanupTimersRef.current.add(cleanupSpinStop);
 
       try {
         await fadeOutWithAudioContext(400);
@@ -489,6 +489,18 @@ export default function LogoFun({
       }
     }
 
+    // mobile: apply spin (coin) animation instead of zoom, 1s
+    el.classList.remove("logo-spin");
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetWidth;
+    el.classList.add("logo-spin");
+    const cleanupSpin = setTimeout(() => {
+      el.classList.remove("logo-spin");
+      cleanupTimersRef.current.delete(cleanupSpin);
+    }, 1000);
+    cleanupTimersRef.current.add(cleanupSpin);
+
+    // start fade (AudioContext preferred)
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -508,17 +520,6 @@ export default function LogoFun({
       await fallbackFadeIn(1000);
       isPlayingRef.current = true;
     }
-
-    // tactile pulse feedback
-    el.classList.remove("logo-pulse");
-    // eslint-disable-next-line no-unused-expressions
-    el.offsetWidth;
-    el.classList.add("logo-pulse");
-    const cleanupT2 = setTimeout(() => {
-      el.classList.remove("logo-pulse");
-      cleanupTimersRef.current.delete(cleanupT2);
-    }, 950);
-    cleanupTimersRef.current.add(cleanupT2);
   };
 
   return (
@@ -564,14 +565,29 @@ export default function LogoFun({
           30% { opacity: 1; }
           100% { transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg) scale(1.05); opacity: 0; }
         }
-        @keyframes logoPulse {
-          0% { transform: scale(1); }
-          30% { transform: scale(1.10); }
-          60% { transform: scale(0.99); }
+
+        /* two-beat heart: first stronger beat, immediate second smaller */
+        @keyframes logoBeat2 {
+          0%   { transform: scale(1); }
+          12%  { transform: scale(1.12); }
+          24%  { transform: scale(1); }
+          36%  { transform: scale(1.06); }
+          48%  { transform: scale(1); }
           100% { transform: scale(1); }
         }
-        .logo-pulse {
-          animation: logoPulse 900ms cubic-bezier(.2,.9,.3,1) both;
+        .logo-beat-2 {
+          animation: logoBeat2 1.1s cubic-bezier(.2,.9,.3,1) both;
+          will-change: transform;
+        }
+
+        /* spin like a coin on mobile touch (1s) */
+        @keyframes logoSpin {
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(360deg); }
+        }
+        .logo-spin {
+          animation: logoSpin 1s ease both;
+          transform-style: preserve-3d;
           will-change: transform;
         }
       `}</style>
