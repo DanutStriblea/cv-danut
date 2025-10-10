@@ -15,10 +15,14 @@ export default function LogoFun({
   const cleanupTimersRef = useRef(new Set());
   const audioRef = useRef(null);
   const fadeIntervalRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const gainRef = useRef(null);
+  const sourceRef = useRef(null);
   const logoRef = useRef(null);
   const logoHoveredRef = useRef(false);
   const isTouchRef = useRef(false);
   const isPlayingRef = useRef(false);
+  const userGestureInitializedRef = useRef(false);
 
   useEffect(() => {
     isTouchRef.current =
@@ -84,6 +88,16 @@ export default function LogoFun({
             console.warn("audio cleanup warning", cleanupErr);
           }
         }
+        if (audioCtxRef.current) {
+          try {
+            audioCtxRef.current.close();
+          } catch (err) {
+            console.warn("audio context close failed", err);
+          }
+          audioCtxRef.current = null;
+          gainRef.current = null;
+          sourceRef.current = null;
+        }
       } catch (cleanupOuterErr) {
         console.warn("cleanup failed", cleanupOuterErr);
       }
@@ -136,7 +150,115 @@ export default function LogoFun({
     cleanupTimersRef.current.add(gracefulStop);
   };
 
-  const fadeIn = (duration = 1000) =>
+  const resAfterTimeout = (fn, ms) => {
+    const t = setTimeout(() => {
+      try {
+        fn();
+      } catch (err) {
+        console.warn("resAfterTimeout callback failed", err);
+      }
+    }, ms);
+    cleanupTimersRef.current.add(t);
+  };
+
+  // ensure AudioContext and MediaElementSource; do not create MediaElementSource more than once
+  const ensureAudioContext = async () => {
+    if (userGestureInitializedRef.current) return;
+    const a = audioRef.current;
+    if (!a) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) {
+        userGestureInitializedRef.current = true;
+        return;
+      }
+
+      if (audioCtxRef.current && gainRef.current && sourceRef.current) {
+        userGestureInitializedRef.current = true;
+        try {
+          if (audioCtxRef.current.state === "suspended")
+            await audioCtxRef.current.resume();
+        } catch (err) {
+          console.warn("resume failed", err);
+        }
+        return;
+      }
+
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gainRef.current = gain;
+
+      try {
+        const source = ctx.createMediaElementSource(a);
+        sourceRef.current = source;
+        source.connect(gain).connect(ctx.destination);
+      } catch (err) {
+        console.warn("createMediaElementSource failed", err);
+      }
+
+      userGestureInitializedRef.current = true;
+    } catch (err) {
+      console.warn("audio context init failed", err);
+      userGestureInitializedRef.current = true;
+    }
+  };
+
+  const fadeInWithAudioContext = (duration = 1000) =>
+    new Promise((res) => {
+      const ctx = audioCtxRef.current;
+      const gain = gainRef.current;
+      const a = audioRef.current;
+      if (!a) return res();
+      if (!ctx || !gain) {
+        void fallbackFadeIn(duration).then(res);
+        return;
+      }
+      try {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(1, now + duration / 1000);
+        resAfterTimeout(res, duration + 50);
+      } catch (err) {
+        console.warn("gain fadeIn failed", err);
+        void fallbackFadeIn(duration).then(res);
+      }
+    });
+
+  const fadeOutWithAudioContext = (duration = 400) =>
+    new Promise((res) => {
+      const ctx = audioCtxRef.current;
+      const gain = gainRef.current;
+      const a = audioRef.current;
+      if (!a) return res();
+      if (!ctx || !gain) {
+        void fallbackFadeOut(duration).then(res);
+        return;
+      }
+      try {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value || 1, now);
+        gain.gain.linearRampToValueAtTime(0, now + duration / 1000);
+        resAfterTimeout(async () => {
+          try {
+            a.pause();
+            a.currentTime = 0;
+          } catch (err) {
+            console.warn("pause after fadeOut failed", err);
+          }
+          res();
+        }, duration + 50);
+      } catch (err) {
+        console.warn("gain fadeOut failed", err);
+        void fallbackFadeOut(duration).then(res);
+      }
+    });
+
+  const fallbackFadeIn = (duration = 1000) =>
     new Promise((res) => {
       const a = audioRef.current;
       if (!a) return res();
@@ -159,7 +281,7 @@ export default function LogoFun({
         try {
           a.volume = newVol;
         } catch (err) {
-          console.warn("volume set failed during fade-in", err);
+          console.warn("volume set failed during fallback fade-in", err);
         }
         if (currentStep >= steps) {
           clearInterval(fadeIntervalRef.current);
@@ -174,7 +296,7 @@ export default function LogoFun({
       }, stepTime);
     });
 
-  const fadeOut = (duration = 400) =>
+  const fallbackFadeOut = (duration = 400) =>
     new Promise((res) => {
       const a = audioRef.current;
       if (!a) return res();
@@ -193,7 +315,7 @@ export default function LogoFun({
         try {
           a.volume = newVol;
         } catch (err) {
-          console.warn("volume set failed during fade-out", err);
+          console.warn("volume set failed during fallback fade-out", err);
         }
         if (currentStep >= steps) {
           clearInterval(fadeIntervalRef.current);
@@ -210,6 +332,7 @@ export default function LogoFun({
       }, stepTime);
     });
 
+  // desktop hover handlers
   const onLogoMouseEnter = () => {
     logoHoveredRef.current = true;
     startSpawning();
@@ -219,12 +342,18 @@ export default function LogoFun({
   const onLogoMouseLeave = () => {
     logoHoveredRef.current = false;
     stopSpawning();
-    handleLogoMouseLeaveAudio();
+    void handleLogoMouseLeaveAudio();
   };
 
   const handleLogoMouseEnterAudio = async () => {
     const a = audioRef.current;
     if (!a) return;
+    try {
+      await ensureAudioContext();
+    } catch (err) {
+      console.warn("ensureAudioContext failed", err);
+    }
+
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
@@ -254,28 +383,47 @@ export default function LogoFun({
     }
 
     try {
-      a.volume = 0;
+      if (audioCtxRef.current && gainRef.current) {
+        gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+      } else {
+        a.volume = 0;
+      }
     } catch (err) {
-      console.warn("set volume failed", err);
+      console.warn("set volume/gain failed", err);
     }
 
-    const playPromise = a.play();
-    if (playPromise && typeof playPromise.catch === "function")
-      playPromise.catch(() => {});
-    await fadeIn(1000);
-    isPlayingRef.current = true;
+    try {
+      const playPromise = a.play();
+      if (playPromise && typeof playPromise.catch === "function")
+        playPromise.catch(() => {});
+      if (audioCtxRef.current && gainRef.current) {
+        await fadeInWithAudioContext(1000);
+      } else {
+        await fallbackFadeIn(1000);
+      }
+      isPlayingRef.current = true;
+    } catch (err) {
+      console.warn("play/fade failed on mouseenter", err);
+    }
   };
 
-  const handleLogoMouseLeaveAudio = () => {
-    void fadeOut(400).then(() => {
-      isPlayingRef.current = false;
-    });
+  const handleLogoMouseLeaveAudio = async () => {
+    try {
+      await fadeOutWithAudioContext(400);
+    } catch (err) {
+      await fallbackFadeOut(400);
+    }
+    isPlayingRef.current = false;
   };
 
+  // mobile touch toggle
   const handleTouchToggle = async (e) => {
     e.preventDefault();
     const el = logoRef.current;
     if (!el) return;
+
+    const a = audioRef.current;
+    if (!a) return;
 
     if (isPlayingRef.current) {
       el.classList.remove("logo-pulse");
@@ -288,16 +436,19 @@ export default function LogoFun({
       }, 450);
       cleanupTimersRef.current.add(cleanupT);
 
-      await fadeOut(400);
+      try {
+        await fadeOutWithAudioContext(400);
+      } catch (err) {
+        await fallbackFadeOut(400);
+      }
       isPlayingRef.current = false;
       return;
     }
 
+    // Start: user gesture - try immediate play
     logoHoveredRef.current = true;
     startSpawning();
 
-    const a = audioRef.current;
-    if (!a) return;
     try {
       const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
       const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
@@ -307,29 +458,67 @@ export default function LogoFun({
       console.warn("set currentTime failed", timeErr);
     }
 
+    let played = false;
     try {
-      a.volume = 0;
+      const p = a.play();
+      if (p && typeof p.then === "function") await p;
+      played = true;
+    } catch (playErr) {
+      console.warn("play() failed on first attempt", playErr);
+    }
+
+    try {
+      await ensureAudioContext();
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        try {
+          await audioCtxRef.current.resume();
+        } catch (resumeErr) {
+          console.warn("resume audioCtx failed", resumeErr);
+        }
+      }
     } catch (err) {
-      console.warn("set volume failed", err);
+      console.warn("ensureAudioContext failed", err);
     }
 
-    const playPromise = a.play();
-    if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch(() => {});
+    if (!played) {
+      try {
+        const p2 = a.play();
+        if (p2 && typeof p2.then === "function") await p2;
+      } catch (playErr2) {
+        console.warn("play() still failed", playErr2);
+      }
     }
 
+    try {
+      if (audioCtxRef.current && gainRef.current) {
+        gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+        gainRef.current.gain.linearRampToValueAtTime(
+          1,
+          audioCtxRef.current.currentTime + 1.0
+        );
+        resAfterTimeout(() => {
+          isPlayingRef.current = true;
+        }, 1050);
+      } else {
+        await fallbackFadeIn(1000);
+        isPlayingRef.current = true;
+      }
+    } catch (err) {
+      console.warn("fade start failed", err);
+      await fallbackFadeIn(1000);
+      isPlayingRef.current = true;
+    }
+
+    // tactile pulse feedback
     el.classList.remove("logo-pulse");
     // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
     el.classList.add("logo-pulse");
-    const cleanupT = setTimeout(() => {
+    const cleanupT2 = setTimeout(() => {
       el.classList.remove("logo-pulse");
-      cleanupTimersRef.current.delete(cleanupT);
+      cleanupTimersRef.current.delete(cleanupT2);
     }, 950);
-    cleanupTimersRef.current.add(cleanupT);
-
-    await fadeIn(1000);
-    isPlayingRef.current = true;
+    cleanupTimersRef.current.add(cleanupT2);
   };
 
   return (
@@ -377,8 +566,8 @@ export default function LogoFun({
         }
         @keyframes logoPulse {
           0% { transform: scale(1); }
-          30% { transform: scale(1.08); }
-          60% { transform: scale(0.98); }
+          30% { transform: scale(1.10); }
+          60% { transform: scale(0.99); }
           100% { transform: scale(1); }
         }
         .logo-pulse {
