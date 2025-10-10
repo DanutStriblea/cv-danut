@@ -46,3 +46,37 @@
     gap: 8px !important;
   }
 }
+
+/* print helpers */
+@media print {
+  /* asigurăm box-sizing consistent */
+  html,
+  body,
+  * {
+    box-sizing: border-box !important;
+  }
+
+  /* prevenim elemente cu margin negative sau whitespace care adaugă pagină */
+  body > div,
+  .print-frame-scaler,
+  .a4-frame {
+    page-break-after: avoid;
+    page-break-before: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* forțăm imagini să nu depășească containerul la print */
+  .a4-frame img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  /* reduc ușor font-size pe mobile print doar dacă e nevoie */
+  @media print and (max-device-width: 900px) {
+    html,
+    body {
+      font-size: 95% !important;
+    }
+  }
+}
