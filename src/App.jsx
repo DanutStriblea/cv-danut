@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 import Header1 from "./components/Header1";
 import Contact from "./components/Contact";
@@ -16,28 +17,28 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    let mounted = true;
     const recomputeScales = () => {
-      if (!mounted) return;
-      // Scale for fitting content inside A4 (screen only)
+      // Scale for fitting content inside A4
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
         const newContentScale = Math.min(1, frameHeight / contentHeight);
-        if (Math.abs(newContentScale - contentScale) > 0.0001) {
+        if (newContentScale !== contentScale) {
           setContentScale(newContentScale);
         }
       }
 
-      // Scale for fitting A4 frame in viewport (screen only)
+      // Scale for fitting A4 frame in viewport
       const scaleToWidth = (window.innerWidth - 32) / frameWidth;
       const scaleToHeight = (window.innerHeight - 32) / frameHeight;
       const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
       setFrameScale(newFrameScale);
     };
 
+    // Recompute on mount and on content changes
     recomputeScales();
     window.addEventListener("resize", recomputeScales);
 
+    // Use a MutationObserver to detect content changes
     const observer = new MutationObserver(recomputeScales);
     if (contentRef.current) {
       observer.observe(contentRef.current, {
@@ -48,11 +49,9 @@ export default function App() {
     }
 
     return () => {
-      mounted = false;
       window.removeEventListener("resize", recomputeScales);
       observer.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentScale, frameHeight, frameWidth]);
 
   // compensăm dimensiunile pentru a elimina spațiul din dreapta
@@ -67,7 +66,7 @@ export default function App() {
     >
       {/* Wrapper centrat vertical și orizontal */}
       <div
-        className="mx-auto print-frame-scaler flex items-center justify-center"
+        className="mx-auto print-frame-scaler"
         style={{
           transform: `scale(${frameScale})`,
           transformOrigin: "top center",
@@ -88,7 +87,6 @@ export default function App() {
           {/* Conținutul CV-ului */}
           <div
             ref={contentRef}
-            className="content-root"
             style={{
               width: `${compensatedWidth}px`,
               height: `${compensatedHeight}px`,
@@ -111,74 +109,40 @@ export default function App() {
         </div>
       </div>
 
-      {/* Stiluri pentru print și pentru afișare; pastrează integrate în componentă */}
+      {/* Stiluri pentru print */}
       <style>{`
-        /* GENERAL */
-        html, body, * { box-sizing: border-box; }
-
         @media print {
-          /* pagină A4 cu margini mici: zona utilă reală */
-          @page { size: A4; margin: 6mm; }
-
-          /* reset pentru print: nu folosim transform-uri de pe ecran */
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body > div {
+            display: block !important;
+            height: 100%;
+          }
           .print-frame-scaler {
             transform: none !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            margin: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            margin: 0 !important;
           }
-
-          /* folosește dimensiuni reale A4 în mm pentru imprimantă */
           .a4-frame {
-            width: 210mm !important;
-            height: 297mm !important;
             box-shadow: none !important;
-            overflow: visible !important;
-            padding: 6mm !important;
-            margin: 0 auto !important;
-            page-break-after: avoid;
-            page-break-inside: avoid;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
           }
-
-          /* conținutul nu va folosi transform scale la print */
-          .a4-frame > .content-root {
-            transform: none !important;
-            width: auto !important;
-            height: auto !important;
-            overflow: visible !important;
-          }
-
-          /* forțăm evitarea de page breaks în interiorul secțiunilor */
-          .no-break, .section, .project, .content-root {
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
-
-          /* ascunde elemente inutile pentru print */
-          .no-print { display: none !important; }
-
-          /* limitează imaginile să nu extindă layout-ul */
-          .a4-frame img { max-width: 100% !important; height: auto !important; display: block; }
-
-          /* prevenim orice margin-left/right neașteptat */
-          body, html { margin: 0; padding: 0; width: 210mm; height: 297mm; overflow: hidden; }
-
-          /* mică reducere de font pe mobile print pentru a evita overflow minor */
-          @media print and (max-device-width: 900px) {
-            body { font-size: 97% !important; }
-          }
-        }
-
-        /* DISPLAY (screen) helpers to keep centered and avoid chaotic zoom */
-        @media screen {
-          /* centrarea verticală / orizontală rămâne */
-          .print-frame-scaler { display: flex; align-items: center; justify-content: center; width: 100%; }
-
-          /* conținutul root folosește overflow visible pentru layout pe ecran */
-          .content-root { overflow: visible; }
         }
       `}</style>
     </div>

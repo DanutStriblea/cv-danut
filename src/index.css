@@ -9,6 +9,7 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
 }
 
+/* animație principală: deplasare în sus + mic sway */
 @keyframes noteRise {
   0% {
     transform: translateY(0) translateX(0) rotate(0deg) scale(1);
@@ -24,64 +25,4 @@
   }
 }
 
-/* Print specific helpers */
-@media print {
-  /* asigurăm box-sizing consistent */
-  html,
-  body,
-  * {
-    box-sizing: border-box !important;
-  }
-
-  /* prevenim elemente care adaugă pagini goale */
-  body > div,
-  .print-frame-scaler,
-  .a4-frame {
-    page-break-after: avoid;
-    page-break-before: avoid;
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* forțăm imaginile și iframe-urile să nu spargă layout-ul */
-  .a4-frame img,
-  .a4-frame iframe {
-    max-width: 100% !important;
-    height: auto !important;
-    display: block;
-  }
-
-  /* mică compactare pentru mobile print dacă e nevoie */
-  @media print and (max-device-width: 900px) {
-    html,
-    body {
-      font-size: 97% !important;
-    }
-    .grid.grid-cols-3 {
-      gap: 8px !important;
-    }
-    .px-6 {
-      padding-left: 6px !important;
-      padding-right: 6px !important;
-    }
-    .pt-4 {
-      padding-top: 6px !important;
-    }
-    .pb-2 {
-      padding-bottom: 6px !important;
-    }
-  }
-}
-
-/* Screen helpers to avoid chaotic zoom */
-@media screen {
-  /* limităm transform nesting that causes visual jumps */
-  .print-frame-scaler {
-    will-change: transform;
-  }
-  .a4-frame,
-  .content-root {
-    backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-}
+/* mică variație între elemente cu pseudo variabile CSS (folosite din JS prin transform) */
