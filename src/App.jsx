@@ -14,13 +14,17 @@ export default function App() {
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const contentRef = useRef(null);
-  const vvHandlerRef = useRef(null);
-  const pinchTimerRef = useRef(null);
+  const isTouchRef = useRef(false);
 
   const frameWidth = 794; // A4 width px
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
+    // Detect if it's a touch device
+    isTouchRef.current =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+
     const recomputeScales = () => {
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
@@ -30,61 +34,33 @@ export default function App() {
         }
       }
 
-      const scaleToWidth = (window.innerWidth - 32) / frameWidth;
-      const scaleToHeight = (window.innerHeight - 32) / frameHeight;
-      const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
-      setFrameScale(newFrameScale);
+      // On touch devices, use fixed scaling to allow native zoom
+      if (isTouchRef.current) {
+        const scaleToWidth = (window.innerWidth - 32) / frameWidth;
+        const scaleToHeight = (window.innerHeight - 32) / frameHeight;
+        const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
+        setFrameScale(newFrameScale * 0.9); // Slightly smaller to allow space for native zoom
+      } else {
+        // Desktop behavior - normal scaling
+        const scaleToWidth = (window.innerWidth - 32) / frameWidth;
+        const scaleToHeight = (window.innerHeight - 32) / frameHeight;
+        const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
+        setFrameScale(newFrameScale);
+      }
     };
 
-    // initial compute
+    // Initial compute
     recomputeScales();
 
-    // prefer visualViewport when available to detect pinch gestures
-    const visualViewport = window.visualViewport;
-    let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
-
-    const scheduleStableRecompute = () => {
-      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
-      pinchTimerRef.current = setTimeout(() => {
-        recomputeScales();
-        pinchTimerRef.current = null;
-        lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
-      }, 250); // wait for pinch to settle
-    };
-
-    if (visualViewport) {
-      const onVVChange = () => {
-        const cur = visualViewport.scale || 1;
-        // when scale is changing assume pinch/zoom; delay recompute until stable
-        if (Math.abs(cur - lastVVScale) > 0.001) {
-          lastVVScale = cur;
-          scheduleStableRecompute();
-          return;
-        }
-        // layout-only changes: recompute immediately
-        recomputeScales();
-      };
-      vvHandlerRef.current = onVVChange;
-      visualViewport.addEventListener("resize", onVVChange, { passive: true });
-      visualViewport.addEventListener("scroll", onVVChange, { passive: true });
-
-      window.addEventListener("resize", recomputeScales);
-      window.addEventListener("orientationchange", recomputeScales);
-    } else {
-      // fallback
-      window.addEventListener("resize", recomputeScales);
-      window.addEventListener("orientationchange", recomputeScales);
-    }
+    // Only use resize/orientation change listeners
+    window.addEventListener("resize", recomputeScales);
+    window.addEventListener("orientationchange", recomputeScales);
 
     // Mutation observer for content changes
     const observer = new MutationObserver(() => {
-      // debounce slight DOM churn
-      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
-      pinchTimerRef.current = setTimeout(() => {
-        recomputeScales();
-        pinchTimerRef.current = null;
-      }, 120);
+      setTimeout(recomputeScales, 120);
     });
+
     if (contentRef.current) {
       observer.observe(contentRef.current, {
         childList: true,
@@ -94,26 +70,10 @@ export default function App() {
     }
 
     return () => {
-      try {
-        if (visualViewport && vvHandlerRef.current) {
-          visualViewport.removeEventListener("resize", vvHandlerRef.current);
-          visualViewport.removeEventListener("scroll", vvHandlerRef.current);
-          vvHandlerRef.current = null;
-        }
-        window.removeEventListener("resize", recomputeScales);
-        window.removeEventListener("orientationchange", recomputeScales);
-        if (pinchTimerRef.current) {
-          clearTimeout(pinchTimerRef.current);
-          pinchTimerRef.current = null;
-        }
-        observer.disconnect();
-      } catch (err) {
-        // keep cleanup robust
-        // eslint-disable-next-line no-console
-        console.warn("cleanup failed in App scale effect", err);
-      }
+      window.removeEventListener("resize", recomputeScales);
+      window.removeEventListener("orientationchange", recomputeScales);
+      observer.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentScale, frameHeight, frameWidth]);
 
   const compensatedWidth = frameWidth / contentScale;
@@ -138,14 +98,23 @@ export default function App() {
       className="flex justify-center items-center min-h-screen 
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
                     print:bg-transparent overflow-auto py-2 print:p-0 print:min-h-0"
+      style={{
+        // Allow native zoom on touch devices
+        touchAction: isTouchRef.current ? "manipulation" : "auto",
+        WebkitOverflowScrolling: "touch",
+      }}
     >
       {/* Wrapper centrat vertical și orizontal */}
       <div
         className="mx-auto print-frame-scaler"
         style={{
-          transform: `scale(${combinedScale})`,
+          transform: isTouchRef.current ? "none" : `scale(${combinedScale})`,
           transformOrigin: "top center",
           position: "relative",
+          // On touch devices, use responsive width/height instead of scaling
+          width: isTouchRef.current ? "90vw" : "auto",
+          maxWidth: isTouchRef.current ? `${frameWidth}px` : "none",
+          height: isTouchRef.current ? "auto" : "auto",
         }}
       >
         {/* Rama A4 */}
@@ -155,18 +124,20 @@ export default function App() {
             print:shadow-none print:rounded-none
           "
           style={{
-            width: `${frameWidth}px`,
-            height: `${frameHeight}px`,
+            width: isTouchRef.current ? "100%" : `${frameWidth}px`,
+            height: isTouchRef.current ? "auto" : `${frameHeight}px`,
             position: "relative",
+            // Ensure content is visible for native zoom
+            minHeight: isTouchRef.current ? "100vh" : "auto",
           }}
         >
           {/* Conținutul CV-ului */}
           <div
             ref={contentRef}
             style={{
-              width: `${compensatedWidth}px`,
-              height: `${compensatedHeight}px`,
-              transform: `scale(${contentScale})`,
+              width: isTouchRef.current ? "100%" : `${compensatedWidth}px`,
+              height: isTouchRef.current ? "auto" : `${compensatedHeight}px`,
+              transform: isTouchRef.current ? "none" : `scale(${contentScale})`,
               transformOrigin: "top left",
             }}
           >
@@ -174,7 +145,7 @@ export default function App() {
             <Contact />
             <Profile />
 
-            <div className="px-6 pt-4 pb-2 grid grid-cols-3 gap-6 w-full">
+            <div className="px-6 pt-4 pb-2 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
               <Education />
               <Skills />
               <Projects />
@@ -185,9 +156,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* IMPORTANT: ZoomControls is OUTSIDE .print-frame-scaler (sibling),
-          so position:fixed will be relative to viewport and not affected by scale */}
-      <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+      {/* On touch devices, hide zoom controls since we use native zoom */}
+      {!isTouchRef.current && (
+        <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+      )}
 
       {/* Stiluri pentru print */}
       <style>{`
@@ -215,7 +187,19 @@ export default function App() {
         .print-frame-scaler { display: inline-block; box-sizing: border-box; }
 
         /* safety: keep touch gestures available */
-        html, body { -webkit-text-size-adjust: 100%; touch-action: auto; }
+        html, body { 
+          -webkit-text-size-adjust: 100%; 
+          touch-action: manipulation;
+          overflow-x: auto;
+        }
+
+        /* Better mobile experience */
+        @media (max-width: 768px) {
+          .a4-frame {
+            margin: 0 auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          }
+        }
       `}</style>
     </div>
   );
