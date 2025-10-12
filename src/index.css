@@ -1,33 +1,5 @@
 @import "tailwindcss";
 
-/* Force 80% zoom on desktop browsers */
-@media screen and (min-width: 769px) {
-  body {
-    zoom: 0.8;
-    -moz-transform: scale(0.8);
-    -moz-transform-origin: 0 0;
-    -o-transform: scale(0.8);
-    -o-transform-origin: 0 0;
-    -webkit-transform: scale(0.8);
-    -webkit-transform-origin: 0 0;
-  }
-}
-
-/* Reset zoom for mobile and print */
-@media screen and (max-width: 768px) {
-  body {
-    zoom: 1;
-    transform: none;
-  }
-}
-
-@media print {
-  body {
-    zoom: 1 !important;
-    transform: none !important;
-  }
-}
-
 /* Allow native pinch-to-zoom and touch gestures at page level */
 html,
 body,
@@ -173,8 +145,6 @@ body {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
-    zoom: 1 !important;
-    transform: none !important;
   }
 
   .print-frame-scaler {
@@ -185,7 +155,6 @@ body {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    zoom: 1 !important;
   }
 
   .a4-frame {

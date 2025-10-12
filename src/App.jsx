@@ -11,7 +11,7 @@ import ZoomControls from "./components/ZoomControls";
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
-  const [userZoom, setUserZoom] = useState(0.8); // Start cu 80% zoom
+  const [userZoom, setUserZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef(null);
   const vvHandlerRef = useRef(null);
@@ -29,17 +29,6 @@ export default function App() {
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
-
-    // Force 80% zoom on desktop
-    const force80PercentZoom = () => {
-      if (!isMobile) {
-        document.body.style.zoom = "0.8";
-        document.documentElement.style.zoom = "0.8";
-      }
-    };
-
-    // Apply zoom on initial load
-    force80PercentZoom();
 
     const recomputeScales = () => {
       if (contentRef.current) {
@@ -137,9 +126,6 @@ export default function App() {
           }
           observer.disconnect();
           window.removeEventListener("resize", checkMobile);
-          // Reset zoom on cleanup
-          document.body.style.zoom = "";
-          document.documentElement.style.zoom = "";
         } catch (err) {
           console.warn("cleanup failed in App scale effect", err);
         }
@@ -148,9 +134,6 @@ export default function App() {
 
     return () => {
       window.removeEventListener("resize", checkMobile);
-      // Reset zoom on cleanup
-      document.body.style.zoom = "";
-      document.documentElement.style.zoom = "";
     };
   }, [contentScale, frameHeight, frameWidth, isMobile]);
 
@@ -176,7 +159,6 @@ export default function App() {
       className="flex justify-center items-center min-h-screen 
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
                     print:bg-white overflow-auto py-2 print:py-0 print:min-h-0"
-      style={!isMobile ? { zoom: 0.8 } : {}}
     >
       {/* Wrapper centrat vertical și orizontal */}
       <div
@@ -265,7 +247,6 @@ export default function App() {
             padding: 0 !important;
             background: white !important;
             overflow: hidden !important;
-            zoom: 1 !important;
           }
           body > * {
             visibility: hidden;
@@ -283,7 +264,6 @@ export default function App() {
             width: 210mm !important;
             height: 297mm !important;
             max-width: none !important;
-            zoom: 1 !important;
           }
           .a4-frame {
             width: 210mm !important;
@@ -302,24 +282,6 @@ export default function App() {
           }
           .zoom-controls {
             display: none !important;
-          }
-        }
-
-        /* Desktop - Force 80% zoom */
-        @media screen and (min-width: 769px) {
-          body {
-            zoom: 0.8;
-          }
-          .print-frame-scaler {
-            transform: scale(var(--scale, 1)) !important;
-            transform-origin: top center !important;
-          }
-        }
-
-        /* Mobile - No forced zoom */
-        @media screen and (max-width: 768px) {
-          body {
-            zoom: 1;
           }
         }
 
