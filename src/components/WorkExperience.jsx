@@ -380,11 +380,12 @@ export default function WorkExperience() {
   };
 
   return (
-    <section className="px-6 pt-2 w-full">
+    <section className="px-6 pt-2 w-full pb-6">
+      {" "}
+      {/* Added pb-6 for bottom padding */}
       <h2 className="mb-3 text-lg font-semibold font-montserrat bg-slate-300 shadow-sm w-full py-2 rounded-md text-center">
         Experiență profesională
       </h2>
-
       <div className="grid grid-cols-3 gap-3 w-full text-xs">
         {WORKS.map(({ period, role, place, details }, idx) => (
           <div
@@ -439,14 +440,17 @@ export default function WorkExperience() {
             </div>
           </div>
 
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
+          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue mb-4">
+            {" "}
+            {/* Added mb-4 for space after */}
             <p className="font-bold">
               Permis auto: <span className="font-normal">Categoria B</span>
             </p>
           </div>
         </div>
       </div>
-
+      {/* Additional space at the bottom of the entire section */}
+      <div className="h-6"></div>
       <style>{`
         @media (hover: hover) and (pointer: fine) {
           .card-hover-blue {
