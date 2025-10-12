@@ -21,7 +21,7 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    // Check if device is mobile (strictly under 769px)
+    // ✅ Treat only real phones as "mobile" (<= 768px)
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
@@ -39,7 +39,6 @@ export default function App() {
         }
       }
 
-      // Don't compute frame scale on mobile - let browser handle zoom
       if (!isMobile) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
