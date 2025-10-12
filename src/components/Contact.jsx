@@ -20,62 +20,62 @@ export default function Contact() {
     };
   }, []);
 
-  // Mobile layout: compact, 2 rows
+  // Mobile layout: compact, EXACT 2 rows
   if (isMobile) {
     return (
       <div className="relative z-10 w-full bg-slate-100 shadow-sm">
-        <div className="w-full px-4 py-3 flex flex-col gap-3 text-gray-700 text-xs">
-          {/* First row - Email, Phone, Location */}
-          <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-            <div className="flex items-center gap-2">
-              <MailIcon className="w-4 h-4 text-gray-500" />
-              <span>dan_22@yahoo.com</span>
+        <div className="w-full px-3 py-2 flex flex-col gap-2 text-gray-700 text-xs">
+          {/* First row - EXACTLY Email, Phone, Location */}
+          <div className="flex justify-between items-center gap-1">
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <MailIcon className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="truncate">dan_22@yahoo.com</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <PhoneIcon className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <PhoneIcon className="w-3 h-3 text-gray-500 flex-shrink-0" />
               <span>077205910</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <LocationMarkerIcon className="w-4 h-4 text-gray-500" />
-              <span>Brașov, România</span>
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <LocationMarkerIcon className="w-3 h-3 text-gray-500 flex-shrink-0" />
+              <span className="truncate">Brașov</span>
             </div>
           </div>
 
-          {/* Second row - Social media */}
-          <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex items-center gap-2 group">
-              <FaFacebook className="w-4 h-4 text-blue-600 transform transition-transform duration-200 group-hover:scale-110" />
+          {/* Second row - EXACTLY Facebook, Instagram, TikTok */}
+          <div className="flex justify-between items-center gap-1">
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <FaFacebook className="w-3 h-3 text-blue-600 flex-shrink-0" />
               <a
                 href="https://www.facebook.com/striblea.danut"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline text-blue-600"
+                className="hover:underline text-blue-600 truncate"
               >
                 striblea.danut
               </a>
             </div>
 
-            <div className="flex items-center gap-2 group">
-              <FaInstagram className="w-4 h-4 text-pink-500 transform transition-transform duration-200 group-hover:scale-110" />
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <FaInstagram className="w-3 h-3 text-pink-500 flex-shrink-0" />
               <a
                 href="https://www.instagram.com/danut_striblea/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline text-pink-600"
+                className="hover:underline text-pink-600 truncate"
               >
                 danut_striblea
               </a>
             </div>
 
-            <div className="flex items-center gap-2 group">
-              <FaTiktok className="w-4 h-4 text-black transform transition-transform duration-200 group-hover:scale-110" />
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <FaTiktok className="w-3 h-3 text-black flex-shrink-0" />
               <a
                 href="https://www.tiktok.com/@the.broken.vinyl"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline text-black"
+                className="hover:underline text-black truncate"
               >
                 @the.broken.vinyl
               </a>
@@ -89,7 +89,6 @@ export default function Contact() {
   // Desktop layout: original, all in one row
   return (
     <div className="relative z-10 w-full bg-slate-100 shadow-sm">
-      {/* întins pe toată lățimea A4 - layout original */}
       <div className="w-full px-6 py-3 flex justify-evenly items-center text-gray-700 text-xs">
         {/* Email */}
         <div className="flex items-center gap-2">
@@ -139,7 +138,7 @@ export default function Contact() {
         <div className="flex items-center gap-2 group">
           <FaTiktok className="w-5 h-5 text-black transform transition-transform duration-200 group-hover:scale-110" />
           <a
-            href="https://www.tiktok.com/@the.broken.vinyl?_r=1&_d=secCgYIASAHKAESPgo8zr9s2UHfKD4fHq%2BhHi%2Bd5IsUeUMZhbsW9Uclvaz82eqUJTY47TWUGiXGYEHjBFMKqKm4EzDFWAEFLqlZGgA%3D&_svg=2&checksum=d4dce1bfd26149629d03fef6376fb7d3fdf0f1c65beaff969e42e175f2b481d9&item_author_type=1&sec_uid=MS4wLjABAAAAOTDZ9H4dCMv4W9tWnJDAphusc3vWuo3aG6DqLJGlRtxn1KZXibX_YhLZsrRS1UAG&sec_user_id=MS4wLjABAAAAOTDZ9H4dCMv4W9tWnJDAphusc3vWuo3aG6DqLJGlRtxn1KZXibX_YhLZsrRS1UAG&share_app_id=1233&share_author_id=7457945313769309217&share_link_id=494D50F3-E7DD-4A64-86D8-0C624C71D5E2&share_scene=1&sharer_language=en&social_share_type=4&source=h5_m&timestamp=1759323969&tt_from=copy&u_code=ei7779bi21ah75&ug_btm=b8727%2Cb0&user_id=7457945313769309217&utm_campaign=client_share&utm_medium=ios&utm_source=copy"
+            href="https://www.tiktok.com/@the.broken.vinyl"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline text-black"
