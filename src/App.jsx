@@ -6,14 +6,12 @@ import Education from "./components/Education";
 import Skills from "./components/Skills";
 import Projects from "./components/Projects";
 import WorkExperience from "./components/WorkExperience";
-import ZoomControls from "./components/ZoomControls";
 
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
   const contentRef = useRef(null);
   const vvHandlerRef = useRef(null);
   const pinchTimerRef = useRef(null);
@@ -22,20 +20,16 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    // Check device type
-    const checkDevice = () => {
-      const width = window.innerWidth;
-      // Telefoane: <= 768px
-      const mobile = width <= 768;
-      // Tablete: 769px - 1024px (le tratăm ca desktop)
-      const tablet = width > 768 && width <= 1024;
-
+    // Check if mobile device - considerăm doar telefoanele mici ca mobile
+    const checkMobile = () => {
+      // Telefoane mici: <= 768px (mobile view)
+      // Tablete și desktop: > 768px (desktop view)
+      const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      setIsTablet(tablet);
     };
 
-    checkDevice();
-    window.addEventListener("resize", checkDevice);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
 
     const recomputeScales = () => {
       if (contentRef.current) {
@@ -47,7 +41,7 @@ export default function App() {
       }
 
       // Don't compute frame scale on mobile - let browser handle zoom
-      // Tabletele primesc același tratament ca desktop-ul
+      // Tabletele și desktop-ul folosesc scaling
       if (!isMobile) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
@@ -60,7 +54,7 @@ export default function App() {
     recomputeScales();
 
     // On mobile, don't set up the complex scaling listeners
-    // Tabletele folosesc același sistem ca desktop-ul
+    // Tabletele și desktop-ul folosesc scaling
     if (!isMobile) {
       // prefer visualViewport when available to detect pinch gestures
       const visualViewport = window.visualViewport;
@@ -134,7 +128,7 @@ export default function App() {
             pinchTimerRef.current = null;
           }
           observer.disconnect();
-          window.removeEventListener("resize", checkDevice);
+          window.removeEventListener("resize", checkMobile);
         } catch (err) {
           console.warn("cleanup failed in App scale effect", err);
         }
@@ -142,28 +136,17 @@ export default function App() {
     }
 
     return () => {
-      window.removeEventListener("resize", checkDevice);
+      window.removeEventListener("resize", checkMobile);
     };
   }, [contentScale, frameHeight, frameWidth, isMobile]);
 
   const compensatedWidth = frameWidth / contentScale;
   const compensatedHeight = frameHeight / contentScale;
 
-  const ZOOM_STEP = 0.15;
-  const handleZoomIn = () =>
-    setUserZoom((z) => {
-      const next = +(z * (1 + ZOOM_STEP)).toFixed(4);
-      return Math.min(3, next);
-    });
-  const handleZoomOut = () =>
-    setUserZoom((z) => {
-      const next = +(z / (1 + ZOOM_STEP)).toFixed(4);
-      return Math.max(0.25, next);
-    });
-
   const combinedScale = frameScale * userZoom;
 
-  // Tabletele și desktop-ul folosesc același comportament
+  // Doar telefoanele mici folosesc mobile view
+  // Tabletele și desktop-ul folosesc desktop view
   const shouldUseDesktopView = !isMobile;
 
   return (
@@ -176,7 +159,7 @@ export default function App() {
       <div
         className="mx-auto print-frame-scaler"
         style={
-          !shouldUseDesktopView // Doar telefoanele folosesc mobile view
+          !shouldUseDesktopView // Doar telefoanele mici folosesc mobile view
             ? {
                 width: "100%",
                 maxWidth: `${frameWidth}px`,
@@ -196,7 +179,7 @@ export default function App() {
             print:shadow-none print:bg-white print:border-0
           "
           style={
-            !shouldUseDesktopView // Doar telefoanele folosesc mobile view
+            !shouldUseDesktopView // Doar telefoanele mici folosesc mobile view
               ? {
                   width: "100%",
                   height: "auto",
@@ -212,7 +195,7 @@ export default function App() {
           <div
             ref={contentRef}
             style={
-              !shouldUseDesktopView // Doar telefoanele folosesc mobile view
+              !shouldUseDesktopView // Doar telefoanele mici folosesc mobile view
                 ? {
                     width: "100%",
                     height: "auto",
@@ -239,11 +222,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* Hide zoom controls only on phones, show on tablets and desktop */}
-      {shouldUseDesktopView && (
-        <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
-      )}
 
       {/* Stiluri pentru print - rămân la fel */}
       <style>{`
