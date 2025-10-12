@@ -39,6 +39,12 @@ export default function LogoFun({
       a.playsInline = true;
       a.crossOrigin = "anonymous";
       audioRef.current = a;
+      // try to nudge the browser to fetch metadata (may be ignored by strict autoplay policies)
+      try {
+        a.load();
+      } catch (loadErr) {
+        console.warn("audio load() failed (non-fatal)", loadErr);
+      }
     } catch (initErr) {
       console.warn("audio init failed", initErr);
     }
@@ -302,7 +308,6 @@ export default function LogoFun({
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(currentVal, now);
         gain.gain.linearRampToValueAtTime(0, now + duration / 1000);
-
         resAfterTimeout(async () => {
           try {
             try {
@@ -314,7 +319,6 @@ export default function LogoFun({
                 pauseErr
               );
             }
-
             try {
               a.volume = MASTER_VOL;
             } catch (volErr) {
@@ -323,11 +327,9 @@ export default function LogoFun({
                 volErr
               );
             }
-
             res();
           } catch (innerErr) {
             console.warn("unexpected error in fadeOut completion", innerErr);
-            // fallback to ensure promise resolves even on unexpected errors
             try {
               await fallbackFadeOut(duration);
             } catch (fbErr) {
@@ -512,15 +514,37 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
-  const handleTouchToggle = async (e) => {
+  // unified pointerdown handler: immediate play for touch, mouse -> visual spin only
+  const handlePointerDown = async (e) => {
+    // if mouse pointer -> desktop visual spin only
+    if (e && e.pointerType && e.pointerType === "mouse") {
+      // preserve existing desktop spin behaviour
+      handleDesktopClickSpin(e);
+      return;
+    }
+
+    // for touch/pencil, stop propagation but do not prevent default (to avoid blocking pinch)
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+
     const el = logoRef.current;
     if (!el) return;
 
     const a = audioRef.current;
     if (!a) return;
 
-    if (isPlayingRef.current) {
+    // Call play() synchronously inside user gesture to satisfy mobile autoplay policies.
+    let played = false;
+    try {
+      const p = a.play();
+      if (p && typeof p.then === "function") await p;
+      played = true;
+    } catch (playErr) {
+      console.warn("initial play() in pointerdown failed", playErr);
+    }
+
+    // continue with toggle logic as before
+    if (isPlayingRef.current && played) {
+      // currently playing -> stop
       el.classList.remove("logo-spin");
       el.offsetWidth;
       el.classList.add("logo-spin");
@@ -544,6 +568,7 @@ export default function LogoFun({
       return;
     }
 
+    // start spawn + prepare audio
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -556,17 +581,9 @@ export default function LogoFun({
       console.warn("set currentTime failed", timeErr);
     }
 
-    let played = false;
+    // ensure audio context exists/resumed (silent) after calling play()
     try {
       await ensureAudioContext(true);
-      const p = a.play();
-      if (p && typeof p.then === "function") await p;
-      played = true;
-    } catch (playErr) {
-      console.warn("play() failed on first attempt", playErr);
-    }
-
-    try {
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         try {
           await audioCtxRef.current.resume();
@@ -578,15 +595,17 @@ export default function LogoFun({
       console.warn("ensureAudioContext failed (touch)", err);
     }
 
-    if (!played) {
+    // if initial play didn't succeed, retry
+    if (!isPlayingRef.current) {
       try {
         const p2 = a.play();
         if (p2 && typeof p2.then === "function") await p2;
       } catch (playErr2) {
-        console.warn("play() still failed", playErr2);
+        console.warn("play() still failed after ensureAudioContext", playErr2);
       }
     }
 
+    // spin visual on touch
     el.classList.remove("logo-spin");
     el.offsetWidth;
     el.classList.add("logo-spin");
@@ -596,6 +615,7 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
+    // fade in
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -621,18 +641,18 @@ export default function LogoFun({
     }
   };
 
-  const handleDesktopPointerDownSpin = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  // desktop click: visual spin only — absolutely no audio interaction here
+  const handleDesktopClickSpin = (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (isTouchRef.current) return;
     const el = logoRef.current;
     if (!el) return;
-
     el.classList.remove("logo-spin");
     el.offsetWidth;
     el.classList.add("logo-spin");
-
     const cleanup = setTimeout(() => {
       el.classList.remove("logo-spin");
       cleanupTimersRef.current.delete(cleanup);
@@ -652,10 +672,7 @@ export default function LogoFun({
         className="object-contain opacity-50 cursor-pointer"
         onPointerEnter={!isTouchRef.current ? onLogoPointerEnter : undefined}
         onPointerLeave={!isTouchRef.current ? onLogoPointerLeave : undefined}
-        onPointerDown={
-          !isTouchRef.current ? handleDesktopPointerDownSpin : undefined
-        }
-        onTouchStart={isTouchRef.current ? handleTouchToggle : undefined}
+        onPointerDown={handlePointerDown}
       />
 
       <div

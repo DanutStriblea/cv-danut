@@ -37,18 +37,25 @@ body,
 /* safety: ensure inline wrapper behaves well when scaled */
 .print-frame-scaler {
   display: inline-block;
-  box-sizing: border-box; /* ajută la calcule de dimensiune când se scalează */
+  box-sizing: border-box;
 }
 
-/* minimal hook if needed */
-.zoom-controls {
+/* Make overlays non-obstructive for pinch gestures:
+   container won't intercept gestures, but buttons remain clickable */
+.zoom-controls,
+.zoom-controls-outside {
+  pointer-events: none;
+  touch-action: auto;
+}
+.zoom-controls .zoom-btn,
+.zoom-controls-outside .zoom-btn {
   pointer-events: auto;
-  touch-action: auto; /* allow taps on zoom buttons without interfering with pinch */
+  touch-action: manipulation;
 }
 
 /* ensure the outside variant also has pointer-events if needed */
 .zoom-controls-outside {
-  pointer-events: auto;
+  pointer-events: none;
   touch-action: auto;
 }
 
@@ -63,7 +70,7 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* small utility: an unobtrusive 'enable audio' pill if you implement it */
+/* unobtrusive audio-enable pill (optional usage) */
 .audio-enable-pill {
   position: fixed;
   right: 12px;
