@@ -181,7 +181,7 @@ export default function App() {
         <div
           className="
             a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
-            print:shadow-none print:bg-white
+            print:shadow-none print:bg-white print:border-0
           "
           style={
             isMobile
@@ -233,74 +233,150 @@ export default function App() {
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
 
-      {/* Stiluri pentru print */}
+      {/* Stiluri pentru print - FĂRĂ DUNGI NEGRE ȘI CU PADDING-URI CORECTE */}
       <style>{`
         @media print {
           @page { 
             size: A4; 
             margin: 0mm;
-          }
-          html, body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
-          }
-          body > * {
-            visibility: hidden;
-          }
-          .print-frame-scaler,
-          .print-frame-scaler * {
-            visibility: visible;
-          }
-          .print-frame-scaler {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            transform: none !important;
-            margin: 0 !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            max-width: none !important;
-          }
-          .a4-frame {
-            width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
-            box-shadow: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
-          }
-          .a4-frame > div {
-            transform: none !important;
-            width: 100% !important;
-            height: 100% !important;
-            min-height: 297mm !important;
-          }
-          .zoom-controls {
-            display: none !important;
+            padding: 0mm;
+            border: none;
           }
           
-          /* Force single page and prevent breaks */
+          /* RESET mai puțin agresiv - păstrează layout-ul dar elimină problemele */
+          html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+            border: none !important;
+            outline: none !important;
+          }
+          
+          body {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            background: white !important;
+            overflow: hidden !important;
+            border: none !important;
+          }
+          
+          #root {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
+            overflow: hidden !important;
+            border: none !important;
+          }
+          
+          /* ELIMINĂ DUNGILE NEGRE ȘI SCROLLBARS */
+          * {
+            box-sizing: border-box !important;
+            border: none !important;
+            outline: none !important;
+          }
+          
+          /* PĂSTREAZĂ EXACT desktop view-ul */
+          .print-frame-scaler {
+            transform: none !important;
+            width: 794px !important;
+            height: 1123px !important;
+            margin: 0 auto !important;
+            display: block !important;
+            position: relative !important;
+            scale: 1 !important;
+            rotate: 0 !important;
+            overflow: hidden !important;
+            border: none !important;
+            outline: none !important;
+          }
+          
+          .a4-frame {
+            width: 794px !important;
+            height: 1123px !important;
+            box-shadow: none !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            overflow: hidden !important;
+            border: none !important;
+            outline: none !important;
+          }
+          
+          .a4-frame > div {
+            transform: none !important;
+            width: 794px !important;
+            height: auto !important;
+            min-height: 1123px !important;
+            display: block !important;
+            scale: 1 !important;
+            overflow: hidden !important;
+            border: none !important;
+            outline: none !important;
+            /* PĂSTREAZĂ PADDING-URILE ORIGINALE */
+            padding: 0 !important;
+          }
+          
+          /* PĂSTREAZĂ PADDING-URILE COMPONENTELOR */
+          .px-6 {
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+          }
+          
+          .pt-4 {
+            padding-top: 1rem !important;
+          }
+          
+          .pb-2 {
+            padding-bottom: 0.5rem !important;
+          }
+          
+          /* Asigură că grid-ul are spațierea corectă */
           .grid.grid-cols-1.md\\:grid-cols-3 {
             display: grid !important;
             grid-template-columns: 1fr 1fr 1fr !important;
             gap: 1.5rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            padding-top: 1rem !important;
+            padding-bottom: 0.5rem !important;
           }
           
-          /* Ensure all content fits on one page */
-          * {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          
-          /* Hide mobile-specific elements */
-          .mobile-only {
+          /* Ascunde elementele care nu trebuie să apară în print */
+          .zoom-controls,
+          .vite-error-overlay,
+          .audio-enable-pill,
+          [class*="overlay"],
+          [class*="popup"],
+          [class*="modal"] {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
+          
+          /* Garantează că nu există scrollbars */
+          ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          
+          /* Pentru Firefox */
+          html {
+            scrollbar-width: none !important;
+          }
+          
+          /* Elimină orice border sau outline care ar putea crea dungi */
+          div, section, article, main, header, footer {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
           }
         }
 
