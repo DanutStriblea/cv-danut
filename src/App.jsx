@@ -13,6 +13,7 @@ export default function App() {
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const contentRef = useRef(null);
   const vvHandlerRef = useRef(null);
   const pinchTimerRef = useRef(null);
@@ -21,14 +22,20 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    // Check if mobile device
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
+    // Check device type
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      // Telefoane: <= 768px
+      const mobile = width <= 768;
+      // Tablete: 769px - 1024px (le tratăm ca desktop)
+      const tablet = width > 768 && width <= 1024;
+
       setIsMobile(mobile);
+      setIsTablet(tablet);
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
 
     const recomputeScales = () => {
       if (contentRef.current) {
@@ -40,6 +47,7 @@ export default function App() {
       }
 
       // Don't compute frame scale on mobile - let browser handle zoom
+      // Tabletele primesc același tratament ca desktop-ul
       if (!isMobile) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
@@ -52,6 +60,7 @@ export default function App() {
     recomputeScales();
 
     // On mobile, don't set up the complex scaling listeners
+    // Tabletele folosesc același sistem ca desktop-ul
     if (!isMobile) {
       // prefer visualViewport when available to detect pinch gestures
       const visualViewport = window.visualViewport;
@@ -125,7 +134,7 @@ export default function App() {
             pinchTimerRef.current = null;
           }
           observer.disconnect();
-          window.removeEventListener("resize", checkMobile);
+          window.removeEventListener("resize", checkDevice);
         } catch (err) {
           console.warn("cleanup failed in App scale effect", err);
         }
@@ -133,7 +142,7 @@ export default function App() {
     }
 
     return () => {
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", checkDevice);
     };
   }, [contentScale, frameHeight, frameWidth, isMobile]);
 
@@ -154,6 +163,9 @@ export default function App() {
 
   const combinedScale = frameScale * userZoom;
 
+  // Tabletele și desktop-ul folosesc același comportament
+  const shouldUseDesktopView = !isMobile;
+
   return (
     <div
       className="flex justify-center items-center min-h-screen 
@@ -164,7 +176,7 @@ export default function App() {
       <div
         className="mx-auto print-frame-scaler"
         style={
-          isMobile
+          !shouldUseDesktopView // Doar telefoanele folosesc mobile view
             ? {
                 width: "100%",
                 maxWidth: `${frameWidth}px`,
@@ -184,7 +196,7 @@ export default function App() {
             print:shadow-none print:bg-white print:border-0
           "
           style={
-            isMobile
+            !shouldUseDesktopView // Doar telefoanele folosesc mobile view
               ? {
                   width: "100%",
                   height: "auto",
@@ -200,7 +212,7 @@ export default function App() {
           <div
             ref={contentRef}
             style={
-              isMobile
+              !shouldUseDesktopView // Doar telefoanele folosesc mobile view
                 ? {
                     width: "100%",
                     height: "auto",
@@ -228,12 +240,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* Hide zoom controls on mobile */}
-      {!isMobile && (
+      {/* Hide zoom controls only on phones, show on tablets and desktop */}
+      {shouldUseDesktopView && (
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
 
-      {/* Stiluri pentru print - FORȚEAZĂ DESKTOP VIEW PE TOATE DISPOZITIVELE */}
+      {/* Stiluri pentru print - rămân la fel */}
       <style>{`
         @media print {
           @page { 
@@ -241,11 +253,10 @@ export default function App() {
             margin: 0mm;
             padding: 0mm;
             border: none;
-            marks: none;
           }
           
-          /* RESET COMPLET - IGNORĂ COMPLET DISPOZITIVUL */
-          html, body, #root {
+          /* RESET mai puțin agresiv - păstrează layout-ul dar elimină problemele */
+          html, body {
             width: 100% !important;
             height: 100% !important;
             margin: 0 !important;
@@ -254,8 +265,6 @@ export default function App() {
             overflow: hidden !important;
             border: none !important;
             outline: none !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
           
           body {
@@ -264,16 +273,27 @@ export default function App() {
             align-items: flex-start !important;
             background: white !important;
             overflow: hidden !important;
+            border: none !important;
           }
           
           #root {
+            width: 100% !important;
+            height: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: flex-start !important;
             overflow: hidden !important;
+            border: none !important;
           }
           
-          /* FORȚEAZĂ DIMENSIUNILE ȘI LAYOUT-UL DESKTOP */
+          /* ELIMINĂ DUNGILE NEGRE ȘI SCROLLBARS */
+          * {
+            box-sizing: border-box !important;
+            border: none !important;
+            outline: none !important;
+          }
+          
+          /* PĂSTREAZĂ EXACT desktop view-ul */
           .print-frame-scaler {
             transform: none !important;
             width: 794px !important;
@@ -286,8 +306,6 @@ export default function App() {
             overflow: hidden !important;
             border: none !important;
             outline: none !important;
-            box-shadow: none !important;
-            background: white !important;
           }
           
           .a4-frame {
@@ -313,17 +331,11 @@ export default function App() {
             overflow: hidden !important;
             border: none !important;
             outline: none !important;
-            background: white !important;
+            /* PĂSTREAZĂ PADDING-URILE ORIGINALE */
+            padding: 0 !important;
           }
           
-          /* FORȚEAZĂ GRID-UL DESKTOP CU 3 COLOANE */
-          .grid.grid-cols-1.md\\:grid-cols-3 {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 1.5rem !important;
-          }
-          
-          /* PĂSTREAZĂ PADDING-URILE DESKTOP */
+          /* PĂSTREAZĂ PADDING-URILE COMPONENTELOR */
           .px-6 {
             padding-left: 1.5rem !important;
             padding-right: 1.5rem !important;
@@ -337,16 +349,15 @@ export default function App() {
             padding-bottom: 0.5rem !important;
           }
           
+          /* Asigură că grid-ul are spațierea corectă */
           .grid.grid-cols-1.md\\:grid-cols-3 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1.5rem !important;
             padding-left: 1.5rem !important;
             padding-right: 1.5rem !important;
             padding-top: 1rem !important;
             padding-bottom: 0.5rem !important;
-          }
-          
-          /* FORȚEAZĂ TOATE MEDIA QUERIES DESKTOP */
-          .md\\:grid-cols-3 {
-            grid-template-columns: 1fr 1fr 1fr !important;
           }
           
           /* Ascunde elementele care nu trebuie să apară în print */
@@ -361,20 +372,6 @@ export default function App() {
             opacity: 0 !important;
           }
           
-          /* ELIMINĂ ORICE INFLUENȚĂ MOBILE */
-          * {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            max-width: none !important;
-          }
-          
-          *::before, *::after {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-          }
-          
           /* Garantează că nu există scrollbars */
           ::-webkit-scrollbar {
             display: none !important;
@@ -385,6 +382,13 @@ export default function App() {
           /* Pentru Firefox */
           html {
             scrollbar-width: none !important;
+          }
+          
+          /* Elimină orice border sau outline care ar putea crea dungi */
+          div, section, article, main, header, footer {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
           }
         }
 
