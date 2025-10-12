@@ -11,7 +11,7 @@ export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isPhone, setIsPhone] = useState(false);
   const contentRef = useRef(null);
   const vvHandlerRef = useRef(null);
   const pinchTimerRef = useRef(null);
@@ -20,16 +20,17 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    // Check if mobile device - considerăm doar telefoanele mici ca mobile
-    const checkMobile = () => {
-      // Telefoane mici: <= 768px (mobile view)
-      // Tablete și desktop: > 768px (desktop view)
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
+    // Check device type - doar telefoanele mici sunt considerate "mobile"
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      // Doar telefoanele foarte mici: <= 480px
+      // Tablete (481px - 768px) și Desktop (> 768px) primesc desktop view
+      const phone = width <= 480;
+      setIsPhone(phone);
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
 
     const recomputeScales = () => {
       if (contentRef.current) {
@@ -40,9 +41,9 @@ export default function App() {
         }
       }
 
-      // Don't compute frame scale on mobile - let browser handle zoom
-      // Tabletele și desktop-ul folosesc scaling
-      if (!isMobile) {
+      // Tablete și Desktop folosesc scaling
+      // Doar telefoanele mici nu folosesc scaling
+      if (!isPhone) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
         const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
@@ -53,9 +54,9 @@ export default function App() {
     // initial compute
     recomputeScales();
 
-    // On mobile, don't set up the complex scaling listeners
-    // Tabletele și desktop-ul folosesc scaling
-    if (!isMobile) {
+    // Doar pe telefoanele mici nu setăm scaling listeners
+    // Tablete și Desktop folosesc scaling
+    if (!isPhone) {
       // prefer visualViewport when available to detect pinch gestures
       const visualViewport = window.visualViewport;
       let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
@@ -128,7 +129,7 @@ export default function App() {
             pinchTimerRef.current = null;
           }
           observer.disconnect();
-          window.removeEventListener("resize", checkMobile);
+          window.removeEventListener("resize", checkDevice);
         } catch (err) {
           console.warn("cleanup failed in App scale effect", err);
         }
@@ -136,9 +137,9 @@ export default function App() {
     }
 
     return () => {
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", checkDevice);
     };
-  }, [contentScale, frameHeight, frameWidth, isMobile]);
+  }, [contentScale, frameHeight, frameWidth, isPhone]);
 
   const compensatedWidth = frameWidth / contentScale;
   const compensatedHeight = frameHeight / contentScale;
@@ -146,8 +147,8 @@ export default function App() {
   const combinedScale = frameScale * userZoom;
 
   // Doar telefoanele mici folosesc mobile view
-  // Tabletele și desktop-ul folosesc desktop view
-  const shouldUseDesktopView = !isMobile;
+  // Tablete și Desktop folosesc desktop view cu scaling
+  const shouldUseDesktopView = !isPhone;
 
   return (
     <div
@@ -339,7 +340,6 @@ export default function App() {
           }
           
           /* Ascunde elementele care nu trebuie să apară în print */
-          .zoom-controls,
           .vite-error-overlay,
           .audio-enable-pill,
           [class*="overlay"],
