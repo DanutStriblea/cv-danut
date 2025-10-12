@@ -25,140 +25,165 @@ export default function LogoFun({
   const isPlayingRef = useRef(false);
   const userGestureInitializedRef = useRef(false);
   const firstGestureHandlerRef = useRef(null);
+  const audioReadyRef = useRef(false);
 
   useEffect(() => {
     isTouchRef.current =
       typeof window !== "undefined" &&
       ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
-    // create Audio element (don't set crossOrigin)
+    // Initialize audio element
     try {
       const a = new Audio(audioFile);
       a.preload = "auto";
       a.loop = false;
       a.volume = MASTER_VOL;
       a.playsInline = true;
+
+      // Event listeners for audio readiness
+      const handleCanPlay = () => {
+        audioReadyRef.current = true;
+      };
+
+      const handleError = (e) => {
+        console.warn("Audio loading error:", e);
+        audioReadyRef.current = false;
+      };
+
+      a.addEventListener("canplaythrough", handleCanPlay);
+      a.addEventListener("error", handleError);
+
       audioRef.current = a;
+
+      // Try to load audio
       try {
         a.load();
       } catch (loadErr) {
         console.warn("audio load() failed (non-fatal)", loadErr);
       }
+
+      // Periodic visual burst
+      const periodicBurst = () => {
+        const burstCount = 5;
+        for (let i = 0; i < burstCount; i++) {
+          const t = setTimeout(() => createNote(), i * 120);
+          cleanupTimersRef.current.add(t);
+        }
+
+        const el = logoRef.current;
+        if (el && !logoHoveredRef.current) {
+          el.classList.remove("logo-beat-2");
+          void el.offsetWidth;
+          el.classList.add("logo-beat-2");
+          const cleanupT = setTimeout(() => {
+            el.classList.remove("logo-beat-2");
+            cleanupTimersRef.current.delete(cleanupT);
+          }, 1500);
+          cleanupTimersRef.current.add(cleanupT);
+        }
+      };
+
+      try {
+        const initial = setTimeout(periodicBurst, 700);
+        cleanupTimersRef.current.add(initial);
+        periodicRef.current = setInterval(periodicBurst, 10000);
+      } catch (err) {
+        console.warn("periodic setup failed", err);
+      }
+
+      // Setup first-gesture listener to prepare audio context
+      const onFirstGesture = async () => {
+        try {
+          await ensureAudioContext(true);
+        } catch (err) {
+          console.warn("first gesture ensureAudioContext failed", err);
+        } finally {
+          if (firstGestureHandlerRef.current) {
+            window.removeEventListener(
+              "pointerdown",
+              firstGestureHandlerRef.current
+            );
+            window.removeEventListener(
+              "touchstart",
+              firstGestureHandlerRef.current
+            );
+            window.removeEventListener(
+              "keydown",
+              firstGestureHandlerRef.current
+            );
+            firstGestureHandlerRef.current = null;
+          }
+        }
+      };
+
+      firstGestureHandlerRef.current = onFirstGesture;
+      window.addEventListener("pointerdown", onFirstGesture, {
+        once: true,
+        passive: true,
+      });
+      window.addEventListener("touchstart", onFirstGesture, {
+        once: true,
+        passive: true,
+      });
+      window.addEventListener("keydown", onFirstGesture, {
+        once: true,
+        passive: true,
+      });
+
+      // Cleanup
+      return () => {
+        try {
+          if (periodicRef.current) clearInterval(periodicRef.current);
+          if (spawnIntervalRef.current) clearInterval(spawnIntervalRef.current);
+          cleanupTimersRef.current.forEach((t) => clearTimeout(t));
+          cleanupTimersRef.current.clear();
+          if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+          if (audioRef.current) {
+            try {
+              audioRef.current.pause();
+              audioRef.current.src = "";
+              audioRef.current.removeEventListener(
+                "canplaythrough",
+                handleCanPlay
+              );
+              audioRef.current.removeEventListener("error", handleError);
+            } catch (cleanupErr) {
+              console.warn("audio cleanup warning", cleanupErr);
+            }
+          }
+          if (audioCtxRef.current) {
+            try {
+              audioCtxRef.current.close();
+            } catch (closeErr) {
+              console.warn("audio context close failed", closeErr);
+            }
+            audioCtxRef.current = null;
+            gainRef.current = null;
+            sourceRef.current = null;
+          }
+
+          if (firstGestureHandlerRef.current) {
+            window.removeEventListener(
+              "pointerdown",
+              firstGestureHandlerRef.current
+            );
+            window.removeEventListener(
+              "touchstart",
+              firstGestureHandlerRef.current
+            );
+            window.removeEventListener(
+              "keydown",
+              firstGestureHandlerRef.current
+            );
+            firstGestureHandlerRef.current = null;
+          }
+        } catch (cleanupOuterErr) {
+          console.warn("cleanup failed", cleanupOuterErr);
+        }
+      };
     } catch (initErr) {
       console.warn("audio init failed", initErr);
     }
-
-    // periodic visual burst
-    const periodicBurst = () => {
-      const burstCount = 5;
-      for (let i = 0; i < burstCount; i++) {
-        const t = setTimeout(() => createNote(), i * 120);
-        cleanupTimersRef.current.add(t);
-      }
-
-      const el = logoRef.current;
-      if (el && !logoHoveredRef.current) {
-        el.classList.remove("logo-beat-2");
-        void el.offsetWidth;
-        el.classList.add("logo-beat-2");
-        const cleanupT = setTimeout(() => {
-          el.classList.remove("logo-beat-2");
-          cleanupTimersRef.current.delete(cleanupT);
-        }, 1500);
-        cleanupTimersRef.current.add(cleanupT);
-      }
-    };
-
-    try {
-      const initial = setTimeout(periodicBurst, 700);
-      cleanupTimersRef.current.add(initial);
-      periodicRef.current = setInterval(periodicBurst, 10000);
-    } catch (err) {
-      console.warn("periodic setup failed", err);
-    }
-
-    // setup first-gesture listener to prepare audio context
-    const onFirstGesture = async () => {
-      try {
-        await ensureAudioContext(true);
-      } catch (err) {
-        console.warn("first gesture ensureAudioContext failed", err);
-      } finally {
-        if (firstGestureHandlerRef.current) {
-          window.removeEventListener(
-            "pointerdown",
-            firstGestureHandlerRef.current
-          );
-          window.removeEventListener(
-            "touchstart",
-            firstGestureHandlerRef.current
-          );
-          window.removeEventListener("keydown", firstGestureHandlerRef.current);
-          firstGestureHandlerRef.current = null;
-        }
-      }
-    };
-    firstGestureHandlerRef.current = onFirstGesture;
-    window.addEventListener("pointerdown", onFirstGesture, {
-      once: true,
-      passive: true,
-    });
-    window.addEventListener("touchstart", onFirstGesture, {
-      once: true,
-      passive: true,
-    });
-    window.addEventListener("keydown", onFirstGesture, {
-      once: true,
-      passive: true,
-    });
-
-    // cleanup
-    const timersSnapshot = cleanupTimersRef.current;
-    const periodicSnapshot = periodicRef.current;
-    const spawnSnapshot = spawnIntervalRef.current;
-
-    return () => {
-      try {
-        if (periodicSnapshot) clearInterval(periodicSnapshot);
-        if (spawnSnapshot) clearInterval(spawnSnapshot);
-        timersSnapshot.forEach((t) => clearTimeout(t));
-        timersSnapshot.clear();
-        if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-        if (audioRef.current) {
-          try {
-            audioRef.current.pause();
-            audioRef.current.src = "";
-          } catch (cleanupErr) {
-            console.warn("audio cleanup warning", cleanupErr);
-          }
-        }
-        if (audioCtxRef.current) {
-          try {
-            audioCtxRef.current.close();
-          } catch (closeErr) {
-            console.warn("audio context close failed", closeErr);
-          }
-          audioCtxRef.current = null;
-          gainRef.current = null;
-          sourceRef.current = null;
-        }
-
-        if (firstGestureHandlerRef.current) {
-          window.removeEventListener(
-            "pointerdown",
-            firstGestureHandlerRef.current
-          );
-          window.removeEventListener(
-            "touchstart",
-            firstGestureHandlerRef.current
-          );
-          window.removeEventListener("keydown", firstGestureHandlerRef.current);
-          firstGestureHandlerRef.current = null;
-        }
-      } catch (cleanupOuterErr) {
-        console.warn("cleanup failed", cleanupOuterErr);
-      }
-    };
   }, []);
 
   const createNote = () => {
@@ -192,18 +217,8 @@ export default function LogoFun({
 
   const stopSpawning = () => {
     if (!spawnIntervalRef.current) return;
-    const gracefulStop = setTimeout(() => {
-      try {
-        if (spawnIntervalRef.current) {
-          clearInterval(spawnIntervalRef.current);
-          spawnIntervalRef.current = null;
-        }
-      } catch (stopErr) {
-        console.warn("stopSpawning failed", stopErr);
-      }
-      cleanupTimersRef.current.delete(gracefulStop);
-    }, 2000);
-    cleanupTimersRef.current.add(gracefulStop);
+    clearInterval(spawnIntervalRef.current);
+    spawnIntervalRef.current = null;
   };
 
   const resAfterTimeout = (fn, ms) => {
@@ -217,7 +232,7 @@ export default function LogoFun({
     cleanupTimersRef.current.add(t);
   };
 
-  // ensure audio context (create and connect) - should be called from a user gesture
+  // Ensure audio context (create and connect) - should be called from a user gesture
   const ensureAudioContext = async (silentResume = false) => {
     if (userGestureInitializedRef.current) {
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -229,11 +244,13 @@ export default function LogoFun({
       }
       return;
     }
+
     const a = audioRef.current;
     if (!a) {
       userGestureInitializedRef.current = true;
       return;
     }
+
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) {
@@ -421,12 +438,16 @@ export default function LogoFun({
     });
 
   const onLogoPointerEnter = () => {
+    if (isTouchRef.current) return; // Prevent hover on touch devices
+
     logoHoveredRef.current = true;
     startSpawning();
     void handleLogoMouseEnterAudio();
   };
 
   const onLogoPointerLeave = () => {
+    if (isTouchRef.current) return; // Prevent hover on touch devices
+
     logoHoveredRef.current = false;
     stopSpawning();
     void handleLogoMouseLeaveAudio();
@@ -435,6 +456,7 @@ export default function LogoFun({
   const handleLogoMouseEnterAudio = async () => {
     const a = audioRef.current;
     if (!a) return;
+
     try {
       await ensureAudioContext();
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -453,23 +475,47 @@ export default function LogoFun({
       fadeIntervalRef.current = null;
     }
 
-    await new Promise((res) => {
-      if (!isNaN(a.duration) && a.duration > 0) return res();
-      const onLoaded = () => {
-        a.removeEventListener("loadedmetadata", onLoaded);
-        res();
-      };
-      a.addEventListener("loadedmetadata", onLoaded);
-      const fallback = setTimeout(() => {
-        a.removeEventListener("loadedmetadata", onLoaded);
-        res();
-      }, 1000);
-      cleanupTimersRef.current.add(fallback);
-    });
+    // Wait for audio to be ready
+    if (!audioReadyRef.current) {
+      try {
+        await new Promise((res, rej) => {
+          if (!a) return res();
+          if (a.readyState >= 3) {
+            // HAVE_FUTURE_DATA
+            audioReadyRef.current = true;
+            return res();
+          }
+          const onLoaded = () => {
+            a.removeEventListener("canplaythrough", onLoaded);
+            a.removeEventListener("error", onError);
+            audioReadyRef.current = true;
+            res();
+          };
+          const onError = (err) => {
+            a.removeEventListener("canplaythrough", onLoaded);
+            a.removeEventListener("error", onError);
+            rej(err);
+          };
+          a.addEventListener("canplaythrough", onLoaded, { once: true });
+          a.addEventListener("error", onError, { once: true });
+
+          // Fallback timeout
+          const timeout = setTimeout(() => {
+            a.removeEventListener("canplaythrough", onLoaded);
+            a.removeEventListener("error", onError);
+            res(); // Resolve anyway
+          }, 2000);
+          cleanupTimersRef.current.add(timeout);
+        });
+      } catch (err) {
+        console.warn("Audio ready check failed:", err);
+      }
+    }
 
     const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
     const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
     const randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
+
     try {
       a.currentTime = randomStart;
     } catch (timeErr) {
@@ -488,8 +534,12 @@ export default function LogoFun({
 
     try {
       const playPromise = a.play();
-      if (playPromise && typeof playPromise.catch === "function")
-        playPromise.catch(() => {});
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch((playErr) => {
+          console.warn("Play failed on hover:", playErr);
+        });
+      }
+
       if (audioCtxRef.current && gainRef.current) {
         await fadeInWithAudioContext(1000);
       } else {
@@ -515,21 +565,39 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
-  // --- MAIN: handle pointer down (touch/mobile) AND toggle play/stop robust
-  const handlePointerDown = async (e) => {
-    // desktop click path handled separately if pointerType === "mouse"
-    if (e && e.pointerType === "mouse") {
-      handleDesktopClickSpin(e);
-      return;
-    }
+  // Desktop click handler - only visual spin, no audio interaction
+  const handleDesktopClick = (e) => {
+    if (isTouchRef.current) return; // Only for desktop
 
-    if (e && typeof e.stopPropagation === "function") e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
+
+    const el = logoRef.current;
+    if (!el) return;
+
+    // Only do visual spin, don't touch audio
+    el.classList.remove("logo-spin");
+    void el.offsetWidth;
+    el.classList.add("logo-spin");
+    const cleanup = setTimeout(() => {
+      el.classList.remove("logo-spin");
+      cleanupTimersRef.current.delete(cleanup);
+    }, 1000);
+    cleanupTimersRef.current.add(cleanup);
+  };
+
+  // Mobile/touch handler - toggle audio play/stop
+  const handleTouchInteraction = async (e) => {
+    if (!isTouchRef.current) return; // Only for touch devices
+
+    e.preventDefault();
+    e.stopPropagation();
 
     const el = logoRef.current;
     const a = audioRef.current;
     if (!el || !a) return;
 
-    // Ensure audio context exists BEFORE calling play (important for mobile)
+    // Ensure audio context exists BEFORE calling play
     try {
       await ensureAudioContext(true);
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -543,44 +611,7 @@ export default function LogoFun({
       console.warn("ensureAudioContext failed (touch)", err);
     }
 
-    // If already playing -> stop sequence (fade out)
-    if (isPlayingRef.current) {
-      el.classList.remove("logo-spin");
-      void el.offsetWidth;
-      el.classList.add("logo-spin");
-      const cleanupSpinStop = setTimeout(() => {
-        el.classList.remove("logo-spin");
-        cleanupTimersRef.current.delete(cleanupSpinStop);
-      }, 1000);
-      cleanupTimersRef.current.add(cleanupSpinStop);
-
-      try {
-        await fadeOutWithAudioContext(400);
-      } catch (err) {
-        console.warn("fadeOut failed on touch stop", err);
-        try {
-          await fallbackFadeOut(400);
-        } catch (fallbackErr) {
-          console.warn("fallback fadeOut failed on touch stop", fallbackErr);
-        }
-      }
-      isPlayingRef.current = false;
-      return;
-    }
-
-    // Not playing -> start
-    logoHoveredRef.current = true;
-    startSpawning();
-
-    try {
-      const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
-      const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
-      const randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
-      a.currentTime = randomStart;
-    } catch (timeErr) {
-      console.warn("set currentTime failed", timeErr);
-    }
-
+    // Visual spin effect
     el.classList.remove("logo-spin");
     void el.offsetWidth;
     el.classList.add("logo-spin");
@@ -590,71 +621,124 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
-    // Attempt to play (should succeed because we created/resumed context earlier)
-    try {
-      const playP = a.play();
-      if (playP && typeof playP.then === "function") await playP;
-    } catch (playErr) {
-      console.warn("play() failed at touch start", playErr);
-    }
-
-    // Fade-in
-    try {
-      if (audioCtxRef.current && gainRef.current) {
-        gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
-        gainRef.current.gain.linearRampToValueAtTime(
-          MASTER_VOL,
-          audioCtxRef.current.currentTime + 1.0
-        );
-        resAfterTimeout(() => {
-          isPlayingRef.current = true;
-        }, 1050);
-      } else {
-        await fallbackFadeIn(1000);
-        isPlayingRef.current = true;
-      }
-    } catch (err) {
-      console.warn("fade start failed on touch start", err);
+    // Toggle play/stop for touch devices
+    if (isPlayingRef.current) {
+      // Stop audio
       try {
-        await fallbackFadeIn(1000);
-        isPlayingRef.current = true;
-      } catch (fallbackErr) {
-        console.warn("fallback fadeIn failed on touch start", fallbackErr);
+        await fadeOutWithAudioContext(400);
+      } catch (err) {
+        console.warn("fadeOut failed on stop", err);
+        try {
+          await fallbackFadeOut(400);
+        } catch (fallbackErr) {
+          console.warn("fallback fadeOut failed on stop", fallbackErr);
+        }
+      }
+      isPlayingRef.current = false;
+      stopSpawning();
+      logoHoveredRef.current = false;
+    } else {
+      // Start audio
+      logoHoveredRef.current = true;
+      startSpawning();
+
+      // Wait for audio to be ready
+      if (!audioReadyRef.current) {
+        try {
+          await new Promise((res) => {
+            if (!a) return res();
+            if (a.readyState >= 3) {
+              audioReadyRef.current = true;
+              return res();
+            }
+            const onLoaded = () => {
+              a.removeEventListener("canplaythrough", onLoaded);
+              audioReadyRef.current = true;
+              res();
+            };
+            a.addEventListener("canplaythrough", onLoaded, { once: true });
+
+            const timeout = setTimeout(() => {
+              a.removeEventListener("canplaythrough", onLoaded);
+              res();
+            }, 2000);
+            cleanupTimersRef.current.add(timeout);
+          });
+        } catch (err) {
+          console.warn("Audio ready check failed in touch:", err);
+        }
+      }
+
+      const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
+      const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
+      const randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
+
+      try {
+        a.currentTime = randomStart;
+      } catch (timeErr) {
+        console.warn("set currentTime failed", timeErr);
+      }
+
+      // Attempt to play
+      try {
+        const playP = a.play();
+        if (playP && typeof playP.then === "function") await playP;
+      } catch (playErr) {
+        console.warn("play() failed at touch start", playErr);
+        return; // Don't proceed if play failed
+      }
+
+      // Fade-in
+      try {
+        if (audioCtxRef.current && gainRef.current) {
+          gainRef.current.gain.setValueAtTime(
+            0,
+            audioCtxRef.current.currentTime
+          );
+          gainRef.current.gain.linearRampToValueAtTime(
+            MASTER_VOL,
+            audioCtxRef.current.currentTime + 1.0
+          );
+          resAfterTimeout(() => {
+            isPlayingRef.current = true;
+          }, 1050);
+        } else {
+          await fallbackFadeIn(1000);
+          isPlayingRef.current = true;
+        }
+      } catch (err) {
+        console.warn("fade start failed on touch start", err);
+        try {
+          await fallbackFadeIn(1000);
+          isPlayingRef.current = true;
+        } catch (fallbackErr) {
+          console.warn("fallback fadeIn failed on touch start", fallbackErr);
+        }
       }
     }
   };
 
-  // desktop-only visual spin on click (uses event to prevent default)
-  const handleDesktopClickSpin = (e) => {
-    if (e && e.preventDefault) {
-      e.preventDefault();
-      e.stopPropagation();
+  // Unified pointer down handler that routes based on device type
+  const handlePointerDown = (e) => {
+    if (isTouchRef.current) {
+      handleTouchInteraction(e);
+    } else {
+      handleDesktopClick(e);
     }
-    if (isTouchRef.current) return;
-    const el = logoRef.current;
-    if (!el) return;
-    el.classList.remove("logo-spin");
-    void el.offsetWidth;
-    el.classList.add("logo-spin");
-    const cleanup = setTimeout(() => {
-      el.classList.remove("logo-spin");
-      cleanupTimersRef.current.delete(cleanup);
-    }, 1000);
-    cleanupTimersRef.current.add(cleanup);
   };
 
   return (
     <div
       className={`relative flex justify-center items-center ${className}`}
-      style={{ touchAction: "auto" }}
+      style={{ touchAction: "manipulation" }}
     >
       <img
         ref={logoRef}
         src={logoSrc}
         alt="Logo"
-        className="object-contain opacity-50 cursor-pointer"
-        onPointerEnter={!isTouchRef.current ? onLogoPointerEnter : undefined}
-        onPointerLeave={!isTouchRef.current ? onLogoPointerLeave : undefined}
+        className="object-contain opacity-50 cursor-pointer select-none"
+        onPointerEnter={onLogoPointerEnter}
+        onPointerLeave={onLogoPointerLeave}
         onPointerDown={handlePointerDown}
       />
 
