@@ -14,6 +14,8 @@ export default function App() {
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
   const contentRef = useRef(null);
+  const vvHandlerRef = useRef(null);
+  const pinchTimerRef = useRef(null);
 
   const frameWidth = 794; // A4 width px
   const frameHeight = 1123; // A4 height px
@@ -34,10 +36,55 @@ export default function App() {
       setFrameScale(newFrameScale);
     };
 
+    // initial compute
     recomputeScales();
-    window.addEventListener("resize", recomputeScales);
 
-    const observer = new MutationObserver(recomputeScales);
+    // prefer visualViewport when available to detect pinch gestures
+    const visualViewport = window.visualViewport;
+    let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
+
+    const scheduleStableRecompute = () => {
+      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
+      pinchTimerRef.current = setTimeout(() => {
+        recomputeScales();
+        pinchTimerRef.current = null;
+        lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
+      }, 250); // wait for pinch to settle
+    };
+
+    if (visualViewport) {
+      const onVVChange = () => {
+        const cur = visualViewport.scale || 1;
+        // when scale is changing assume pinch/zoom; delay recompute until stable
+        if (Math.abs(cur - lastVVScale) > 0.001) {
+          lastVVScale = cur;
+          scheduleStableRecompute();
+          return;
+        }
+        // layout-only changes: recompute immediately
+        recomputeScales();
+      };
+      vvHandlerRef.current = onVVChange;
+      visualViewport.addEventListener("resize", onVVChange, { passive: true });
+      visualViewport.addEventListener("scroll", onVVChange, { passive: true });
+
+      window.addEventListener("resize", recomputeScales);
+      window.addEventListener("orientationchange", recomputeScales);
+    } else {
+      // fallback
+      window.addEventListener("resize", recomputeScales);
+      window.addEventListener("orientationchange", recomputeScales);
+    }
+
+    // Mutation observer for content changes
+    const observer = new MutationObserver(() => {
+      // debounce slight DOM churn
+      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
+      pinchTimerRef.current = setTimeout(() => {
+        recomputeScales();
+        pinchTimerRef.current = null;
+      }, 120);
+    });
     if (contentRef.current) {
       observer.observe(contentRef.current, {
         childList: true,
@@ -47,9 +94,26 @@ export default function App() {
     }
 
     return () => {
-      window.removeEventListener("resize", recomputeScales);
-      observer.disconnect();
+      try {
+        if (visualViewport && vvHandlerRef.current) {
+          visualViewport.removeEventListener("resize", vvHandlerRef.current);
+          visualViewport.removeEventListener("scroll", vvHandlerRef.current);
+          vvHandlerRef.current = null;
+        }
+        window.removeEventListener("resize", recomputeScales);
+        window.removeEventListener("orientationchange", recomputeScales);
+        if (pinchTimerRef.current) {
+          clearTimeout(pinchTimerRef.current);
+          pinchTimerRef.current = null;
+        }
+        observer.disconnect();
+      } catch (err) {
+        // keep cleanup robust
+        // eslint-disable-next-line no-console
+        console.warn("cleanup failed in App scale effect", err);
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentScale, frameHeight, frameWidth]);
 
   const compensatedWidth = frameWidth / contentScale;
@@ -151,7 +215,7 @@ export default function App() {
         .print-frame-scaler { display: inline-block; box-sizing: border-box; }
 
         /* safety: keep touch gestures available */
-        html, body { -webkit-text-size-adjust: 100%; }
+        html, body { -webkit-text-size-adjust: 100%; touch-action: auto; }
       `}</style>
     </div>
   );

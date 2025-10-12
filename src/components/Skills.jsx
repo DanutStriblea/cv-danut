@@ -20,14 +20,14 @@ export default function Skills() {
   const gainRef = useRef(null);
   const timerRef = useRef(null);
   const initializedRef = useRef(false);
-  const TARGET_VOLUME = 0.6;
+  const TARGET_VOLUME = 0.2;
 
   useEffect(() => {
     try {
       const a = new Audio(skillSoundMp3);
       a.preload = "auto";
       a.loop = true;
-      a.volume = TARGET_VOLUME;
+      a.volume = 0.6;
       audioRef.current = a;
     } catch (initErr) {
       console.warn("skill audio init failed", initErr);

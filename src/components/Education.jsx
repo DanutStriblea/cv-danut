@@ -37,7 +37,7 @@ export default function Education() {
       const a = new Audio(bookPagesMp3);
       a.preload = "auto";
       a.loop = true;
-      a.volume = 0.6;
+      a.volume = 0.4;
       audioRef.current = a;
     } catch (initErr) {
       console.warn("audio init failed", initErr);
@@ -142,7 +142,7 @@ export default function Education() {
               a.pause();
               a.currentTime = 0;
             } else {
-              a.volume = 0.6;
+              a.volume = 0.4;
             }
           } catch (finalErr) {
             console.warn("final fallback action failed", finalErr);
@@ -215,7 +215,7 @@ export default function Education() {
         try {
           a.pause();
           a.currentTime = 0;
-          a.volume = 0.6;
+          a.volume = 0.4;
         } catch (pauseErr) {
           console.warn("pause after fadeOut failed", pauseErr);
         }

@@ -4,6 +4,7 @@ import logoSrc from "../assets/logo.png";
 import audioFile from "../assets/DrinksAndFlowers.mp3";
 
 const NOTES = ["♪", "♫", "♩", "♬", "♭", "♯"];
+const MASTER_VOL = 0.6;
 
 export default function LogoFun({
   className = "w-35",
@@ -23,6 +24,7 @@ export default function LogoFun({
   const isTouchRef = useRef(false);
   const isPlayingRef = useRef(false);
   const userGestureInitializedRef = useRef(false);
+  const firstGestureHandlerRef = useRef(null);
 
   useEffect(() => {
     isTouchRef.current =
@@ -33,7 +35,9 @@ export default function LogoFun({
       const a = new Audio(audioFile);
       a.preload = "auto";
       a.loop = false;
-      a.volume = 1;
+      a.volume = MASTER_VOL;
+      a.playsInline = true;
+      a.crossOrigin = "anonymous";
       audioRef.current = a;
     } catch (initErr) {
       console.warn("audio init failed", initErr);
@@ -69,6 +73,40 @@ export default function LogoFun({
       console.warn("periodic setup failed", err);
     }
 
+    const onFirstGesture = async () => {
+      try {
+        await ensureAudioContext(true);
+      } catch (err) {
+        console.warn("first gesture ensureAudioContext failed", err);
+      } finally {
+        if (firstGestureHandlerRef.current) {
+          window.removeEventListener(
+            "pointerdown",
+            firstGestureHandlerRef.current
+          );
+          window.removeEventListener(
+            "touchstart",
+            firstGestureHandlerRef.current
+          );
+          window.removeEventListener("keydown", firstGestureHandlerRef.current);
+          firstGestureHandlerRef.current = null;
+        }
+      }
+    };
+    firstGestureHandlerRef.current = onFirstGesture;
+    window.addEventListener("pointerdown", onFirstGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("touchstart", onFirstGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("keydown", onFirstGesture, {
+      once: true,
+      passive: true,
+    });
+
     const timersSnapshot = cleanupTimersRef.current;
     const periodicSnapshot = periodicRef.current;
     const spawnSnapshot = spawnIntervalRef.current;
@@ -97,6 +135,19 @@ export default function LogoFun({
           audioCtxRef.current = null;
           gainRef.current = null;
           sourceRef.current = null;
+        }
+
+        if (firstGestureHandlerRef.current) {
+          window.removeEventListener(
+            "pointerdown",
+            firstGestureHandlerRef.current
+          );
+          window.removeEventListener(
+            "touchstart",
+            firstGestureHandlerRef.current
+          );
+          window.removeEventListener("keydown", firstGestureHandlerRef.current);
+          firstGestureHandlerRef.current = null;
         }
       } catch (cleanupOuterErr) {
         console.warn("cleanup failed", cleanupOuterErr);
@@ -160,10 +211,22 @@ export default function LogoFun({
     cleanupTimersRef.current.add(t);
   };
 
-  const ensureAudioContext = async () => {
-    if (userGestureInitializedRef.current) return;
+  const ensureAudioContext = async (silentResume = false) => {
+    if (userGestureInitializedRef.current) {
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        try {
+          await audioCtxRef.current.resume();
+        } catch (resumeErr) {
+          console.warn("resume failed", resumeErr);
+        }
+      }
+      return;
+    }
     const a = audioRef.current;
-    if (!a) return;
+    if (!a) {
+      userGestureInitializedRef.current = true;
+      return;
+    }
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) {
@@ -171,22 +234,11 @@ export default function LogoFun({
         return;
       }
 
-      if (audioCtxRef.current && gainRef.current && sourceRef.current) {
-        userGestureInitializedRef.current = true;
-        try {
-          if (audioCtxRef.current.state === "suspended")
-            await audioCtxRef.current.resume();
-        } catch (resumeErr) {
-          console.warn("resume failed", resumeErr);
-        }
-        return;
-      }
-
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.setValueAtTime(MASTER_VOL, ctx.currentTime);
       gainRef.current = gain;
 
       try {
@@ -197,6 +249,13 @@ export default function LogoFun({
         console.warn("createMediaElementSource failed", sourceErr);
       }
 
+      if (silentResume) {
+        try {
+          if (ctx.state === "suspended") await ctx.resume();
+        } catch (resumeErr) {
+          console.warn("silent resume failed", resumeErr);
+        }
+      }
       userGestureInitializedRef.current = true;
     } catch (err) {
       console.warn("audio context init failed", err);
@@ -218,7 +277,7 @@ export default function LogoFun({
         const now = ctx.currentTime;
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(1, now + duration / 1000);
+        gain.gain.linearRampToValueAtTime(MASTER_VOL, now + duration / 1000);
         resAfterTimeout(res, duration + 50);
       } catch (err) {
         console.warn("gain fadeIn failed", err);
@@ -238,17 +297,45 @@ export default function LogoFun({
       }
       try {
         const now = ctx.currentTime;
+        const currentVal =
+          typeof gain.gain.value === "number" ? gain.gain.value : MASTER_VOL;
         gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(gain.gain.value || 1, now);
+        gain.gain.setValueAtTime(currentVal, now);
         gain.gain.linearRampToValueAtTime(0, now + duration / 1000);
+
         resAfterTimeout(async () => {
           try {
-            a.pause();
-            a.currentTime = 0;
-          } catch (pauseErr) {
-            console.warn("pause after fadeOut failed", pauseErr);
+            try {
+              a.pause();
+              a.currentTime = 0;
+            } catch (pauseErr) {
+              console.warn(
+                "pause/currentTime reset failed during fadeOut",
+                pauseErr
+              );
+            }
+
+            try {
+              a.volume = MASTER_VOL;
+            } catch (volErr) {
+              console.warn(
+                "setting element volume to MASTER_VOL failed",
+                volErr
+              );
+            }
+
+            res();
+          } catch (innerErr) {
+            console.warn("unexpected error in fadeOut completion", innerErr);
+            // fallback to ensure promise resolves even on unexpected errors
+            try {
+              await fallbackFadeOut(duration);
+            } catch (fbErr) {
+              console.warn("fallbackFadeOut also failed", fbErr);
+            } finally {
+              res();
+            }
           }
-          res();
         }, duration + 50);
       } catch (err) {
         console.warn("gain fadeOut failed", err);
@@ -275,7 +362,7 @@ export default function LogoFun({
       fadeIntervalRef.current = setInterval(() => {
         currentStep++;
         const frac = currentStep / steps;
-        const newVol = Math.min(1, frac);
+        const newVol = Math.min(MASTER_VOL, MASTER_VOL * frac);
         try {
           a.volume = newVol;
         } catch (volErr) {
@@ -285,7 +372,7 @@ export default function LogoFun({
           clearInterval(fadeIntervalRef.current);
           fadeIntervalRef.current = null;
           try {
-            a.volume = 1;
+            a.volume = MASTER_VOL;
           } catch (finalErr) {
             console.warn("final volume set failed", finalErr);
           }
@@ -305,7 +392,7 @@ export default function LogoFun({
       const steps = Math.max(4, Math.floor(duration / 50));
       const stepTime = Math.max(10, Math.floor(duration / steps));
       let currentStep = 0;
-      const startVol = typeof a.volume === "number" ? a.volume : 1;
+      const startVol = typeof a.volume === "number" ? a.volume : MASTER_VOL;
       fadeIntervalRef.current = setInterval(() => {
         currentStep++;
         const frac = currentStep / steps;
@@ -321,7 +408,7 @@ export default function LogoFun({
           try {
             a.pause();
             a.currentTime = 0;
-            a.volume = 1;
+            a.volume = MASTER_VOL;
           } catch (stopErr) {
             console.warn("audio stop/reset failed", stopErr);
           }
@@ -330,15 +417,13 @@ export default function LogoFun({
       }, stepTime);
     });
 
-  const onLogoMouseEnter = () => {
-    // desktop hover start audio; keep desktop-only behavior
+  const onLogoPointerEnter = () => {
     logoHoveredRef.current = true;
     startSpawning();
     void handleLogoMouseEnterAudio();
   };
 
-  const onLogoMouseLeave = () => {
-    // desktop hover stop audio
+  const onLogoPointerLeave = () => {
     logoHoveredRef.current = false;
     stopSpawning();
     void handleLogoMouseLeaveAudio();
@@ -349,6 +434,13 @@ export default function LogoFun({
     if (!a) return;
     try {
       await ensureAudioContext();
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        try {
+          await audioCtxRef.current.resume();
+        } catch (resumeErr) {
+          console.warn("resume failed on hover", resumeErr);
+        }
+      }
     } catch (err) {
       console.warn("ensureAudioContext failed", err);
     }
@@ -402,7 +494,7 @@ export default function LogoFun({
       }
       isPlayingRef.current = true;
     } catch (err) {
-      console.warn("play/fade failed on mouseenter", err);
+      console.warn("play/fade failed on pointerenter", err);
     }
   };
 
@@ -410,7 +502,7 @@ export default function LogoFun({
     try {
       await fadeOutWithAudioContext(400);
     } catch (err) {
-      console.warn("fade out failed on mouseleave", err);
+      console.warn("fade out failed on pointerleave", err);
       try {
         await fallbackFadeOut(400);
       } catch (fallbackErr) {
@@ -420,10 +512,7 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
-  // touch: toggle play/pause AND spin (mobile/tablet)
   const handleTouchToggle = async (e) => {
-    // do not call preventDefault to avoid passive listener errors;
-    // simply stop propagation to keep click behavior isolated
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
     const el = logoRef.current;
     if (!el) return;
@@ -431,7 +520,6 @@ export default function LogoFun({
     const a = audioRef.current;
     if (!a) return;
 
-    // if currently playing -> fade out + stop + small spin-stop feedback
     if (isPlayingRef.current) {
       el.classList.remove("logo-spin");
       el.offsetWidth;
@@ -456,7 +544,6 @@ export default function LogoFun({
       return;
     }
 
-    // start spawning notes and prepare audio
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -471,6 +558,7 @@ export default function LogoFun({
 
     let played = false;
     try {
+      await ensureAudioContext(true);
       const p = a.play();
       if (p && typeof p.then === "function") await p;
       played = true;
@@ -479,7 +567,6 @@ export default function LogoFun({
     }
 
     try {
-      await ensureAudioContext();
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         try {
           await audioCtxRef.current.resume();
@@ -488,7 +575,7 @@ export default function LogoFun({
         }
       }
     } catch (err) {
-      console.warn("ensureAudioContext failed", err);
+      console.warn("ensureAudioContext failed (touch)", err);
     }
 
     if (!played) {
@@ -500,9 +587,7 @@ export default function LogoFun({
       }
     }
 
-    // spin visual on touch
     el.classList.remove("logo-spin");
-    // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
     el.classList.add("logo-spin");
     const cleanupSpin = setTimeout(() => {
@@ -511,12 +596,11 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
-    // fade audio in
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
         gainRef.current.gain.linearRampToValueAtTime(
-          1,
+          MASTER_VOL,
           audioCtxRef.current.currentTime + 1.0
         );
         resAfterTimeout(() => {
@@ -537,8 +621,7 @@ export default function LogoFun({
     }
   };
 
-  // desktop click: visual spin only — absolutely no audio interaction here
-  const handleDesktopClickSpin = (e) => {
+  const handleDesktopPointerDownSpin = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -546,10 +629,7 @@ export default function LogoFun({
     const el = logoRef.current;
     if (!el) return;
 
-    // purely visual spin; do not touch audioRef or isPlayingRef
     el.classList.remove("logo-spin");
-    // force reflow to retrigger animation
-    // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
     el.classList.add("logo-spin");
 
@@ -563,17 +643,19 @@ export default function LogoFun({
   return (
     <div
       className={`relative flex justify-center items-center ${className}`}
-      style={{ touchAction: "manipulation" }}
+      style={{ touchAction: "auto" }}
     >
       <img
         ref={logoRef}
         src={logoSrc}
         alt="Logo"
         className="object-contain opacity-50 cursor-pointer"
-        onMouseEnter={!isTouchRef.current ? onLogoMouseEnter : undefined}
-        onMouseLeave={!isTouchRef.current ? onLogoMouseLeave : undefined}
+        onPointerEnter={!isTouchRef.current ? onLogoPointerEnter : undefined}
+        onPointerLeave={!isTouchRef.current ? onLogoPointerLeave : undefined}
+        onPointerDown={
+          !isTouchRef.current ? handleDesktopPointerDownSpin : undefined
+        }
         onTouchStart={isTouchRef.current ? handleTouchToggle : undefined}
-        onClick={!isTouchRef.current ? handleDesktopClickSpin : undefined}
       />
 
       <div
@@ -608,7 +690,6 @@ export default function LogoFun({
           100% { transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg) scale(1.05); opacity: 0; }
         }
 
-        /* two-beat heart: slower and larger scale for both beats */
         @keyframes logoBeat2 {
           0%   { transform: scale(1); }
           18%  { transform: scale(1.18); }
@@ -622,7 +703,6 @@ export default function LogoFun({
           will-change: transform;
         }
 
-        /* spin like a coin on mobile touch (1s) and desktop click visual only */
         @keyframes logoSpin {
           0% { transform: rotateY(0deg); }
           100% { transform: rotateY(360deg); }

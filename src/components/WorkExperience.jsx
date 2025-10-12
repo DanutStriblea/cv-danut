@@ -83,7 +83,7 @@ export default function WorkExperience() {
       const a1 = new Audio(sharpKnifeMp3);
       a1.preload = "auto";
       a1.loop = true;
-      a1.volume = TARGET_VOL;
+      a1.volume = 0.2;
       sharpRef.current.audio = a1;
     } catch (err) {
       console.warn("sharp audio init failed", err);
@@ -93,7 +93,7 @@ export default function WorkExperience() {
       const a2 = new Audio(saleSoundMp3);
       a2.preload = "auto";
       a2.loop = true;
-      a2.volume = TARGET_VOL;
+      a2.volume = 0.2;
       saleRef.current.audio = a2;
     } catch (err) {
       console.warn("sale audio init failed", err);
@@ -103,7 +103,7 @@ export default function WorkExperience() {
       const a3 = new Audio(bustedSantaMp3);
       a3.preload = "metadata";
       a3.loop = true;
-      a3.volume = TARGET_VOL;
+      a3.volume = 0.2;
       bustedRef.current.audio = a3;
     } catch (err) {
       console.warn("busted audio init failed", err);
@@ -207,7 +207,7 @@ export default function WorkExperience() {
               a.pause();
               a.currentTime = 0;
             } else {
-              a.volume = TARGET_VOL;
+              a.volume = 0.2;
             }
           } catch (finalErr) {
             console.warn("final fallback action failed", finalErr);
@@ -307,7 +307,7 @@ export default function WorkExperience() {
         try {
           a.pause();
           a.currentTime = 0;
-          a.volume = TARGET_VOL;
+          a.volume = 0.2;
         } catch (pauseErr) {
           console.warn("pause after fadeOut failed", pauseErr);
         }
