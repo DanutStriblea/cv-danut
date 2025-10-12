@@ -21,7 +21,7 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
-    // Check if mobile device
+    // Check if device is mobile (strictly under 769px)
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
@@ -48,12 +48,9 @@ export default function App() {
       }
     };
 
-    // initial compute
     recomputeScales();
 
-    // On mobile, don't set up the complex scaling listeners
     if (!isMobile) {
-      // prefer visualViewport when available to detect pinch gestures
       const visualViewport = window.visualViewport;
       let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
 
@@ -63,19 +60,17 @@ export default function App() {
           recomputeScales();
           pinchTimerRef.current = null;
           lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
-        }, 250); // wait for pinch to settle
+        }, 250);
       };
 
       if (visualViewport) {
         const onVVChange = () => {
           const cur = visualViewport.scale || 1;
-          // when scale is changing assume pinch/zoom; delay recompute until stable
           if (Math.abs(cur - lastVVScale) > 0.001) {
             lastVVScale = cur;
             scheduleStableRecompute();
             return;
           }
-          // layout-only changes: recompute immediately
           recomputeScales();
         };
         vvHandlerRef.current = onVVChange;
@@ -89,14 +84,11 @@ export default function App() {
         window.addEventListener("resize", recomputeScales);
         window.addEventListener("orientationchange", recomputeScales);
       } else {
-        // fallback
         window.addEventListener("resize", recomputeScales);
         window.addEventListener("orientationchange", recomputeScales);
       }
 
-      // Mutation observer for content changes
       const observer = new MutationObserver(() => {
-        // debounce slight DOM churn
         if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
         pinchTimerRef.current = setTimeout(() => {
           recomputeScales();
@@ -142,15 +134,9 @@ export default function App() {
 
   const ZOOM_STEP = 0.15;
   const handleZoomIn = () =>
-    setUserZoom((z) => {
-      const next = +(z * (1 + ZOOM_STEP)).toFixed(4);
-      return Math.min(3, next);
-    });
+    setUserZoom((z) => Math.min(3, +(z * (1 + ZOOM_STEP)).toFixed(4)));
   const handleZoomOut = () =>
-    setUserZoom((z) => {
-      const next = +(z / (1 + ZOOM_STEP)).toFixed(4);
-      return Math.max(0.25, next);
-    });
+    setUserZoom((z) => Math.max(0.25, +(z / (1 + ZOOM_STEP)).toFixed(4)));
 
   const combinedScale = frameScale * userZoom;
 
@@ -160,7 +146,6 @@ export default function App() {
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
                     print:bg-white overflow-auto py-2 print:py-0 print:min-h-0"
     >
-      {/* Wrapper centrat vertical și orizontal */}
       <div
         className="mx-auto print-frame-scaler"
         style={
@@ -177,12 +162,9 @@ export default function App() {
               }
         }
       >
-        {/* Rama A4 */}
         <div
-          className="
-            a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
-            print:shadow-none print:bg-white print:border-0
-          "
+          className="a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
+            print:shadow-none print:bg-white print:border-0"
           style={
             isMobile
               ? {
@@ -196,7 +178,6 @@ export default function App() {
                 }
           }
         >
-          {/* Conținutul CV-ului */}
           <div
             ref={contentRef}
             style={
@@ -228,170 +209,9 @@ export default function App() {
         </div>
       </div>
 
-      {/* Hide zoom controls on mobile */}
       {!isMobile && (
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
-
-      {/* Stiluri pentru print - FĂRĂ DUNGI NEGRE ȘI CU PADDING-URI CORECTE */}
-      <style>{`
-        @media print {
-          @page { 
-            size: A4; 
-            margin: 0mm;
-            padding: 0mm;
-            border: none;
-          }
-          
-          /* RESET mai puțin agresiv - păstrează layout-ul dar elimină problemele */
-          html, body {
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
-            border: none !important;
-            outline: none !important;
-          }
-          
-          body {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: flex-start !important;
-            background: white !important;
-            overflow: hidden !important;
-            border: none !important;
-          }
-          
-          #root {
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: flex-start !important;
-            overflow: hidden !important;
-            border: none !important;
-          }
-          
-          /* ELIMINĂ DUNGILE NEGRE ȘI SCROLLBARS */
-          * {
-            box-sizing: border-box !important;
-            border: none !important;
-            outline: none !important;
-          }
-          
-          /* PĂSTREAZĂ EXACT desktop view-ul */
-          .print-frame-scaler {
-            transform: none !important;
-            width: 794px !important;
-            height: 1123px !important;
-            margin: 0 auto !important;
-            display: block !important;
-            position: relative !important;
-            scale: 1 !important;
-            rotate: 0 !important;
-            overflow: hidden !important;
-            border: none !important;
-            outline: none !important;
-          }
-          
-          .a4-frame {
-            width: 794px !important;
-            height: 1123px !important;
-            box-shadow: none !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-            overflow: hidden !important;
-            border: none !important;
-            outline: none !important;
-          }
-          
-          .a4-frame > div {
-            transform: none !important;
-            width: 794px !important;
-            height: auto !important;
-            min-height: 1123px !important;
-            display: block !important;
-            scale: 1 !important;
-            overflow: hidden !important;
-            border: none !important;
-            outline: none !important;
-            /* PĂSTREAZĂ PADDING-URILE ORIGINALE */
-            padding: 0 !important;
-          }
-          
-          /* PĂSTREAZĂ PADDING-URILE COMPONENTELOR */
-          .px-6 {
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
-          }
-          
-          .pt-4 {
-            padding-top: 1rem !important;
-          }
-          
-          .pb-2 {
-            padding-bottom: 0.5rem !important;
-          }
-          
-          /* Asigură că grid-ul are spațierea corectă */
-          .grid.grid-cols-1.md\\:grid-cols-3 {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 1.5rem !important;
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
-            padding-top: 1rem !important;
-            padding-bottom: 0.5rem !important;
-          }
-          
-          /* Ascunde elementele care nu trebuie să apară în print */
-          .zoom-controls,
-          .vite-error-overlay,
-          .audio-enable-pill,
-          [class*="overlay"],
-          [class*="popup"],
-          [class*="modal"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-          }
-          
-          /* Garantează că nu există scrollbars */
-          ::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-          
-          /* Pentru Firefox */
-          html {
-            scrollbar-width: none !important;
-          }
-          
-          /* Elimină orice border sau outline care ar putea crea dungi */
-          div, section, article, main, header, footer {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-          }
-        }
-
-        /* ensure wrapper scales cleanly */
-        .print-frame-scaler { 
-          display: inline-block; 
-          box-sizing: border-box; 
-        }
-
-        /* safety: keep touch gestures available */
-        html, body { 
-          -webkit-text-size-adjust: 100%; 
-          touch-action: auto; 
-        }
-      `}</style>
     </div>
   );
 }

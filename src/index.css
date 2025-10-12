@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Allow native pinch-to-zoom and touch gestures at page level */
+/* General safe defaults */
 html,
 body,
 #root {
@@ -10,7 +10,7 @@ body,
   -webkit-text-size-adjust: 100%;
 }
 
-/* note muzicale: urcă și se răsucesc în mai multe direcții; durată 2s */
+/* Notes animation */
 .note {
   animation: noteRise 2000ms linear forwards;
   opacity: 0.95;
@@ -34,14 +34,11 @@ body,
   }
 }
 
-/* safety: ensure inline wrapper behaves well when scaled */
 .print-frame-scaler {
   display: inline-block;
   box-sizing: border-box;
 }
 
-/* Make overlays non-obstructive for pinch gestures:
-   container won't intercept gestures, but buttons remain clickable */
 .zoom-controls,
 .zoom-controls-outside {
   pointer-events: none;
@@ -53,40 +50,11 @@ body,
   touch-action: manipulation;
 }
 
-/* ensure the outside variant also has pointer-events if needed */
-.zoom-controls-outside {
-  pointer-events: none;
-  touch-action: auto;
-}
-
-/* If ZoomControls.jsx uses these classes ensure no conflict */
 .a4-frame {
   position: relative;
 }
 
-/* keep touch gestures available */
-html,
-body {
-  -webkit-text-size-adjust: 100%;
-}
-
-/* unobtrusive audio-enable pill (optional usage) */
-.audio-enable-pill {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  background: rgba(15, 23, 42, 0.9);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  z-index: 2000;
-  pointer-events: auto;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* MOBILE ZOOM FIX - Allow native zoom without layout interference */
+/* ✅ Mobile only (phones ≤768px) */
 @media screen and (max-width: 768px) {
   .print-frame-scaler {
     transform: none !important;
@@ -102,39 +70,53 @@ body {
     transform: none !important;
   }
 
-  /* Hide zoom controls on mobile */
   .zoom-controls,
   .zoom-controls-outside {
     display: none !important;
   }
 
-  /* Ensure content is visible for zooming */
   body {
     overflow-x: auto !important;
   }
 
-  /* Prevent auto-zoom on inputs in iOS */
   input,
   select,
   textarea {
     font-size: 16px !important;
   }
 
-  /* Make grid responsive on mobile */
   .grid.grid-cols-3 {
     grid-template-columns: 1fr !important;
   }
 }
 
-/* DESKTOP - Keep original behavior */
-@media screen and (min-width: 769px) {
+/* ✅ Tablet (769px – 1024px): identic cu desktop */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .print-frame-scaler {
+    transform: scale(var(--scale, 1)) !important;
+    transform-origin: top center !important;
+  }
+
+  .a4-frame {
+    width: 794px !important;
+    height: 1123px !important;
+  }
+
+  .zoom-controls,
+  .zoom-controls-outside {
+    display: flex !important;
+  }
+}
+
+/* ✅ Desktop (peste 1024px) */
+@media screen and (min-width: 1025px) {
   .print-frame-scaler {
     transform: scale(var(--scale, 1)) !important;
     transform-origin: top center !important;
   }
 }
 
-/* PRINT STYLES - Simple and effective */
+/* ✅ Print styles */
 @media print {
   * {
     -webkit-print-color-adjust: exact;
@@ -168,7 +150,6 @@ body {
     display: none !important;
   }
 
-  /* Ascunde popup-urile în print view */
   .vite-error-overlay,
   .audio-enable-pill,
   [class*="overlay"],
