@@ -13,6 +13,7 @@ export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
   const [userZoom, setUserZoom] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef(null);
   const vvHandlerRef = useRef(null);
   const pinchTimerRef = useRef(null);
@@ -21,6 +22,15 @@ export default function App() {
   const frameHeight = 1123; // A4 height px
 
   useEffect(() => {
+    // Check if mobile device
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
     const recomputeScales = () => {
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
@@ -30,91 +40,104 @@ export default function App() {
         }
       }
 
-      const scaleToWidth = (window.innerWidth - 32) / frameWidth;
-      const scaleToHeight = (window.innerHeight - 32) / frameHeight;
-      const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
-      setFrameScale(newFrameScale);
+      // Don't compute frame scale on mobile - let browser handle zoom
+      if (!isMobile) {
+        const scaleToWidth = (window.innerWidth - 32) / frameWidth;
+        const scaleToHeight = (window.innerHeight - 32) / frameHeight;
+        const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
+        setFrameScale(newFrameScale);
+      }
     };
 
     // initial compute
     recomputeScales();
 
-    // prefer visualViewport when available to detect pinch gestures
-    const visualViewport = window.visualViewport;
-    let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
+    // On mobile, don't set up the complex scaling listeners
+    if (!isMobile) {
+      // prefer visualViewport when available to detect pinch gestures
+      const visualViewport = window.visualViewport;
+      let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
 
-    const scheduleStableRecompute = () => {
-      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
-      pinchTimerRef.current = setTimeout(() => {
-        recomputeScales();
-        pinchTimerRef.current = null;
-        lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
-      }, 250); // wait for pinch to settle
-    };
-
-    if (visualViewport) {
-      const onVVChange = () => {
-        const cur = visualViewport.scale || 1;
-        // when scale is changing assume pinch/zoom; delay recompute until stable
-        if (Math.abs(cur - lastVVScale) > 0.001) {
-          lastVVScale = cur;
-          scheduleStableRecompute();
-          return;
-        }
-        // layout-only changes: recompute immediately
-        recomputeScales();
+      const scheduleStableRecompute = () => {
+        if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
+        pinchTimerRef.current = setTimeout(() => {
+          recomputeScales();
+          pinchTimerRef.current = null;
+          lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
+        }, 250); // wait for pinch to settle
       };
-      vvHandlerRef.current = onVVChange;
-      visualViewport.addEventListener("resize", onVVChange, { passive: true });
-      visualViewport.addEventListener("scroll", onVVChange, { passive: true });
 
-      window.addEventListener("resize", recomputeScales);
-      window.addEventListener("orientationchange", recomputeScales);
-    } else {
-      // fallback
-      window.addEventListener("resize", recomputeScales);
-      window.addEventListener("orientationchange", recomputeScales);
-    }
+      if (visualViewport) {
+        const onVVChange = () => {
+          const cur = visualViewport.scale || 1;
+          // when scale is changing assume pinch/zoom; delay recompute until stable
+          if (Math.abs(cur - lastVVScale) > 0.001) {
+            lastVVScale = cur;
+            scheduleStableRecompute();
+            return;
+          }
+          // layout-only changes: recompute immediately
+          recomputeScales();
+        };
+        vvHandlerRef.current = onVVChange;
+        visualViewport.addEventListener("resize", onVVChange, {
+          passive: true,
+        });
+        visualViewport.addEventListener("scroll", onVVChange, {
+          passive: true,
+        });
 
-    // Mutation observer for content changes
-    const observer = new MutationObserver(() => {
-      // debounce slight DOM churn
-      if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
-      pinchTimerRef.current = setTimeout(() => {
-        recomputeScales();
-        pinchTimerRef.current = null;
-      }, 120);
-    });
-    if (contentRef.current) {
-      observer.observe(contentRef.current, {
-        childList: true,
-        subtree: true,
-        characterData: true,
+        window.addEventListener("resize", recomputeScales);
+        window.addEventListener("orientationchange", recomputeScales);
+      } else {
+        // fallback
+        window.addEventListener("resize", recomputeScales);
+        window.addEventListener("orientationchange", recomputeScales);
+      }
+
+      // Mutation observer for content changes
+      const observer = new MutationObserver(() => {
+        // debounce slight DOM churn
+        if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
+        pinchTimerRef.current = setTimeout(() => {
+          recomputeScales();
+          pinchTimerRef.current = null;
+        }, 120);
       });
+      if (contentRef.current) {
+        observer.observe(contentRef.current, {
+          childList: true,
+          subtree: true,
+          characterData: true,
+        });
+      }
+
+      return () => {
+        try {
+          if (visualViewport && vvHandlerRef.current) {
+            visualViewport.removeEventListener("resize", vvHandlerRef.current);
+            visualViewport.removeEventListener("scroll", vvHandlerRef.current);
+            vvHandlerRef.current = null;
+          }
+          window.removeEventListener("resize", recomputeScales);
+          window.removeEventListener("orientationchange", recomputeScales);
+          if (pinchTimerRef.current) {
+            clearTimeout(pinchTimerRef.current);
+            pinchTimerRef.current = null;
+          }
+          observer.disconnect();
+          window.removeEventListener("resize", checkMobile);
+        } catch (err) {
+          // keep cleanup robust
+          console.warn("cleanup failed in App scale effect", err);
+        }
+      };
     }
 
     return () => {
-      try {
-        if (visualViewport && vvHandlerRef.current) {
-          visualViewport.removeEventListener("resize", vvHandlerRef.current);
-          visualViewport.removeEventListener("scroll", vvHandlerRef.current);
-          vvHandlerRef.current = null;
-        }
-        window.removeEventListener("resize", recomputeScales);
-        window.removeEventListener("orientationchange", recomputeScales);
-        if (pinchTimerRef.current) {
-          clearTimeout(pinchTimerRef.current);
-          pinchTimerRef.current = null;
-        }
-        observer.disconnect();
-      } catch (err) {
-        // keep cleanup robust
-        // eslint-disable-next-line no-console
-        console.warn("cleanup failed in App scale effect", err);
-      }
+      window.removeEventListener("resize", checkMobile);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contentScale, frameHeight, frameWidth]);
+  }, [contentScale, frameHeight, frameWidth, isMobile]);
 
   const compensatedWidth = frameWidth / contentScale;
   const compensatedHeight = frameHeight / contentScale;
@@ -142,11 +165,19 @@ export default function App() {
       {/* Wrapper centrat vertical și orizontal */}
       <div
         className="mx-auto print-frame-scaler"
-        style={{
-          transform: `scale(${combinedScale})`,
-          transformOrigin: "top center",
-          position: "relative",
-        }}
+        style={
+          isMobile
+            ? {
+                width: "100%",
+                maxWidth: `${frameWidth}px`,
+                margin: "0 auto",
+              }
+            : {
+                transform: `scale(${combinedScale})`,
+                transformOrigin: "top center",
+                position: "relative",
+              }
+        }
       >
         {/* Rama A4 */}
         <div
@@ -154,27 +185,43 @@ export default function App() {
             a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
             print:shadow-none print:rounded-none
           "
-          style={{
-            width: `${frameWidth}px`,
-            height: `${frameHeight}px`,
-            position: "relative",
-          }}
+          style={
+            isMobile
+              ? {
+                  width: "100%",
+                  height: "auto",
+                  minHeight: `${frameHeight}px`,
+                  position: "relative",
+                }
+              : {
+                  width: `${frameWidth}px`,
+                  height: `${frameHeight}px`,
+                  position: "relative",
+                }
+          }
         >
           {/* Conținutul CV-ului */}
           <div
             ref={contentRef}
-            style={{
-              width: `${compensatedWidth}px`,
-              height: `${compensatedHeight}px`,
-              transform: `scale(${contentScale})`,
-              transformOrigin: "top left",
-            }}
+            style={
+              isMobile
+                ? {
+                    width: "100%",
+                    height: "auto",
+                  }
+                : {
+                    width: `${compensatedWidth}px`,
+                    height: `${compensatedHeight}px`,
+                    transform: `scale(${contentScale})`,
+                    transformOrigin: "top left",
+                  }
+            }
           >
             <Header1 />
             <Contact />
             <Profile />
 
-            <div className="px-6 pt-4 pb-2 grid grid-cols-3 gap-6 w-full">
+            <div className="px-6 pt-4 pb-2 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
               <Education />
               <Skills />
               <Projects />
@@ -185,9 +232,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* IMPORTANT: ZoomControls is OUTSIDE .print-frame-scaler (sibling),
-          so position:fixed will be relative to viewport and not affected by scale */}
-      <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+      {/* Hide zoom controls on mobile */}
+      {!isMobile && (
+        <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+      )}
 
       {/* Stiluri pentru print */}
       <style>{`

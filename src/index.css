@@ -85,3 +85,51 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* MOBILE ZOOM FIX - Allow native zoom without layout interference */
+@media screen and (max-width: 768px) {
+  .print-frame-scaler {
+    transform: none !important;
+    width: 100% !important;
+    max-width: 794px !important;
+    margin: 0 auto !important;
+  }
+
+  .a4-frame {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 1123px !important;
+    transform: none !important;
+  }
+
+  /* Hide zoom controls on mobile */
+  .zoom-controls,
+  .zoom-controls-outside {
+    display: none !important;
+  }
+
+  /* Ensure content is visible for zooming */
+  body {
+    overflow-x: auto !important;
+  }
+
+  /* Prevent auto-zoom on inputs in iOS */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Make grid responsive on mobile */
+  .grid.grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* DESKTOP - Keep original behavior */
+@media screen and (min-width: 769px) {
+  .print-frame-scaler {
+    transform: scale(var(--scale, 1)) !important;
+    transform-origin: top center !important;
+  }
+}
