@@ -233,7 +233,7 @@ export default function App() {
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
 
-      {/* Stiluri pentru print - SEPARATE pentru mobile vs desktop */}
+      {/* Stiluri pentru print - IDENTICE PENTRU TOATE DISPOZITIVELE */}
       <style>{`
         @media print {
           @page { 
@@ -244,23 +244,18 @@ export default function App() {
             marks: none;
           }
           
-          /* RESET COMPLET PENTRU TOATE DISPOZITIVELE */
-          html, body, #root, .print-frame-scaler, .a4-frame, .a4-frame > div,
-          div, section, article, main, header, footer, * {
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
-            background: white !important;
-          }
-          
-          html, body {
+          /* RESET COMPLET - FORȚEAZĂ ACELAȘI COMPORTAMENT PENTRU TOATE DISPOZITIVELE */
+          html, body, #root {
             width: 100% !important;
             height: 100% !important;
-            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
+            overflow: hidden !important;
+            border: none !important;
+            outline: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           
           body {
@@ -268,23 +263,28 @@ export default function App() {
             justify-content: center !important;
             align-items: flex-start !important;
             background: white !important;
-            border: none !important;
-            line-height: 1 !important;
+            overflow: hidden !important;
           }
           
           #root {
-            width: 100% !important;
-            height: 100% !important;
             display: flex !important;
             justify-content: center !important;
             align-items: flex-start !important;
             overflow: hidden !important;
-            background: white !important;
           }
           
-          /* STILURI COMUNE PENTRU PRINT */
+          /* ELIMINĂ ORICE INFLUENȚĂ A DISPOZITIVULUI ÎN PRINT */
+          .print-frame-scaler,
+          .a4-frame,
+          .a4-frame > div {
+            all: unset !important;
+          }
+          
+          /* FORȚEAZĂ EXACT ACELAȘI LAYOUT CA DESKTOP PENTRU TOATE DISPOZITIVELE */
           .print-frame-scaler {
             transform: none !important;
+            width: 794px !important;
+            height: 1123px !important;
             margin: 0 auto !important;
             display: block !important;
             position: relative !important;
@@ -298,6 +298,8 @@ export default function App() {
           }
           
           .a4-frame {
+            width: 794px !important;
+            height: 1123px !important;
             box-shadow: none !important;
             background: white !important;
             margin: 0 !important;
@@ -306,11 +308,13 @@ export default function App() {
             overflow: hidden !important;
             border: none !important;
             outline: none !important;
-            box-shadow: none !important;
           }
           
           .a4-frame > div {
             transform: none !important;
+            width: 794px !important;
+            height: auto !important;
+            min-height: 1123px !important;
             display: block !important;
             scale: 1 !important;
             overflow: hidden !important;
@@ -319,61 +323,14 @@ export default function App() {
             background: white !important;
           }
           
-          /* STILURI SPECIFICE PENTRU MOBILE ÎN PRINT */
-          @media print and (max-width: 768px) {
-            .print-frame-scaler {
-              width: 100% !important;
-              max-width: 794px !important;
-              height: auto !important;
-            }
-            
-            .a4-frame {
-              width: 100% !important;
-              height: auto !important;
-              min-height: 1123px !important;
-            }
-            
-            .a4-frame > div {
-              width: 100% !important;
-              height: auto !important;
-              min-height: 1123px !important;
-            }
-            
-            /* PĂSTREAZĂ LAYOUT-UL MOBILE ÎN PRINT */
-            .grid.grid-cols-1.md\\:grid-cols-3 {
-              display: grid !important;
-              grid-template-columns: 1fr !important;
-              gap: 1.5rem !important;
-            }
+          /* FORȚEAZĂ LAYOUT-UL DESKTOP CU 3 COLOANE PENTRU TOATE DISPOZITIVELE */
+          .grid.grid-cols-1.md\\:grid-cols-3 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1.5rem !important;
           }
           
-          /* STILURI SPECIFICE PENTRU DESKTOP ÎN PRINT */
-          @media print and (min-width: 769px) {
-            .print-frame-scaler {
-              width: 794px !important;
-              height: 1123px !important;
-            }
-            
-            .a4-frame {
-              width: 794px !important;
-              height: 1123px !important;
-            }
-            
-            .a4-frame > div {
-              width: 794px !important;
-              height: auto !important;
-              min-height: 1123px !important;
-            }
-            
-            /* PĂSTREAZĂ LAYOUT-UL DESKTOP ÎN PRINT */
-            .grid.grid-cols-1.md\\:grid-cols-3 {
-              display: grid !important;
-              grid-template-columns: 1fr 1fr 1fr !important;
-              gap: 1.5rem !important;
-            }
-          }
-          
-          /* PADDING-URI COMUNE PENTRU AMBELE DISPOZITIVE */
+          /* PĂSTREAZĂ PADDING-URILE EXACT CA ÎN DESKTOP */
           .px-6 {
             padding-left: 1.5rem !important;
             padding-right: 1.5rem !important;
@@ -407,6 +364,12 @@ export default function App() {
           }
           
           /* ELIMINĂ COMPLET ORICE URMA DE BORDER SAU OUTLINE */
+          * {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+          }
+          
           *::before, *::after {
             border: none !important;
             outline: none !important;
