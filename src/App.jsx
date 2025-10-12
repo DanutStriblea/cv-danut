@@ -273,14 +273,33 @@ export default function App() {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
+            overflow: hidden !important;
           }
           .a4-frame > div {
             transform: none !important;
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
             min-height: 297mm !important;
           }
           .zoom-controls {
+            display: none !important;
+          }
+          
+          /* Force single page and prevent breaks */
+          .grid.grid-cols-1.md\\:grid-cols-3 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1.5rem !important;
+          }
+          
+          /* Ensure all content fits on one page */
+          * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Hide mobile-specific elements */
+          .mobile-only {
             display: none !important;
           }
         }
