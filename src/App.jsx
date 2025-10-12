@@ -233,7 +233,7 @@ export default function App() {
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
 
-      {/* Stiluri pentru print - IDENTICE PENTRU TOATE DISPOZITIVELE */}
+      {/* Stiluri pentru print - FORȚEAZĂ DESKTOP VIEW PE TOATE DISPOZITIVELE */}
       <style>{`
         @media print {
           @page { 
@@ -244,7 +244,7 @@ export default function App() {
             marks: none;
           }
           
-          /* RESET COMPLET - FORȚEAZĂ ACELAȘI COMPORTAMENT PENTRU TOATE DISPOZITIVELE */
+          /* RESET COMPLET - IGNORĂ COMPLET DISPOZITIVUL */
           html, body, #root {
             width: 100% !important;
             height: 100% !important;
@@ -273,14 +273,7 @@ export default function App() {
             overflow: hidden !important;
           }
           
-          /* ELIMINĂ ORICE INFLUENȚĂ A DISPOZITIVULUI ÎN PRINT */
-          .print-frame-scaler,
-          .a4-frame,
-          .a4-frame > div {
-            all: unset !important;
-          }
-          
-          /* FORȚEAZĂ EXACT ACELAȘI LAYOUT CA DESKTOP PENTRU TOATE DISPOZITIVELE */
+          /* FORȚEAZĂ DIMENSIUNILE ȘI LAYOUT-UL DESKTOP */
           .print-frame-scaler {
             transform: none !important;
             width: 794px !important;
@@ -323,14 +316,14 @@ export default function App() {
             background: white !important;
           }
           
-          /* FORȚEAZĂ LAYOUT-UL DESKTOP CU 3 COLOANE PENTRU TOATE DISPOZITIVELE */
+          /* FORȚEAZĂ GRID-UL DESKTOP CU 3 COLOANE */
           .grid.grid-cols-1.md\\:grid-cols-3 {
             display: grid !important;
             grid-template-columns: 1fr 1fr 1fr !important;
             gap: 1.5rem !important;
           }
           
-          /* PĂSTREAZĂ PADDING-URILE EXACT CA ÎN DESKTOP */
+          /* PĂSTREAZĂ PADDING-URILE DESKTOP */
           .px-6 {
             padding-left: 1.5rem !important;
             padding-right: 1.5rem !important;
@@ -351,6 +344,11 @@ export default function App() {
             padding-bottom: 0.5rem !important;
           }
           
+          /* FORȚEAZĂ TOATE MEDIA QUERIES DESKTOP */
+          .md\\:grid-cols-3 {
+            grid-template-columns: 1fr 1fr 1fr !important;
+          }
+          
           /* Ascunde elementele care nu trebuie să apară în print */
           .zoom-controls,
           .vite-error-overlay,
@@ -363,11 +361,12 @@ export default function App() {
             opacity: 0 !important;
           }
           
-          /* ELIMINĂ COMPLET ORICE URMA DE BORDER SAU OUTLINE */
+          /* ELIMINĂ ORICE INFLUENȚĂ MOBILE */
           * {
             border: none !important;
             outline: none !important;
             box-shadow: none !important;
+            max-width: none !important;
           }
           
           *::before, *::after {
@@ -386,12 +385,6 @@ export default function App() {
           /* Pentru Firefox */
           html {
             scrollbar-width: none !important;
-          }
-          
-          /* Elimină orice border de pe imaginile sau elementele care ar putea crea linii */
-          img, hr, table, td, th {
-            border: none !important;
-            outline: none !important;
           }
         }
 
