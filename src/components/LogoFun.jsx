@@ -180,7 +180,7 @@ export default function LogoFun({
       }, stepTime);
     });
 
-  const fadeOutAudio = (duration = 400) =>
+  const fadeOutAudio = (duration = 1000) =>
     new Promise((res) => {
       const a = audioRef.current;
       if (!a) return res();
@@ -219,23 +219,13 @@ export default function LogoFun({
     });
 
   // ===== DESKTOP BEHAVIOR =====
-  const onLogoPointerEnter = () => {
+  const onLogoPointerEnter = async () => {
     if (isTouchRef.current) return; // Ignore hover on touch devices
 
     logoHoveredRef.current = true;
     startSpawning();
-    void handleLogoHoverStart();
-  };
 
-  const onLogoPointerLeave = () => {
-    if (isTouchRef.current) return; // Ignore hover on touch devices
-
-    logoHoveredRef.current = false;
-    stopSpawning();
-    void handleLogoHoverEnd();
-  };
-
-  const handleLogoHoverStart = async () => {
+    // Start audio on hover enter
     const a = audioRef.current;
     if (!a || isPlayingRef.current) return;
 
@@ -286,11 +276,17 @@ export default function LogoFun({
     }
   };
 
-  const handleLogoHoverEnd = async () => {
+  const onLogoPointerLeave = async () => {
+    if (isTouchRef.current) return; // Ignore hover on touch devices
+
+    logoHoveredRef.current = false;
+    stopSpawning();
+
+    // Stop audio on hover leave
     if (!isPlayingRef.current) return;
 
     try {
-      await fadeOutAudio(400);
+      await fadeOutAudio(1000);
     } catch (err) {
       console.warn("fade out failed on hover end", err);
     }
@@ -322,7 +318,7 @@ export default function LogoFun({
     if (isPlayingRef.current) {
       // Stop audio
       try {
-        await fadeOutAudio(400);
+        await fadeOutAudio(1000); // Changed from 400 to 1000 for mobile too
       } catch (err) {
         console.warn("fadeOut failed on mobile stop", err);
       }
