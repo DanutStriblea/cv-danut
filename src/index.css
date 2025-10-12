@@ -133,3 +133,37 @@ body {
     transform-origin: top center !important;
   }
 }
+
+/* PRINT MODE - Force desktop layout for printing */
+@media print {
+  body.print-mode * {
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Forțează contacte pe un singur rând */
+  .relative.z-10.w-full.bg-slate-100.shadow-sm > div {
+    flex-direction: row !important;
+    justify-content: space-evenly !important;
+  }
+
+  /* Forțează profile layout orizontal */
+  .flex-row.items-start.gap-10,
+  .flex.flex-col.md\\:flex-row {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  /* Forțează grid 3 coloane */
+  .grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* Ascunde elemente de mobile */
+  @media (max-width: 768px) {
+    * {
+      display: none !important;
+    }
+  }
+}

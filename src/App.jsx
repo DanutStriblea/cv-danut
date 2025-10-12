@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 import Header1 from "./components/Header1";
 import Contact from "./components/Contact";
@@ -30,6 +29,18 @@ export default function App() {
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
+
+    // Add print mode class handlers
+    const handleBeforePrint = () => {
+      document.body.classList.add("print-mode");
+    };
+
+    const handleAfterPrint = () => {
+      document.body.classList.remove("print-mode");
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
 
     const recomputeScales = () => {
       if (contentRef.current) {
@@ -127,8 +138,9 @@ export default function App() {
           }
           observer.disconnect();
           window.removeEventListener("resize", checkMobile);
+          window.removeEventListener("beforeprint", handleBeforePrint);
+          window.removeEventListener("afterprint", handleAfterPrint);
         } catch (err) {
-          // keep cleanup robust
           console.warn("cleanup failed in App scale effect", err);
         }
       };
@@ -136,6 +148,8 @@ export default function App() {
 
     return () => {
       window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
     };
   }, [contentScale, frameHeight, frameWidth, isMobile]);
 
@@ -240,7 +254,10 @@ export default function App() {
       {/* Stiluri pentru print */}
       <style>{`
         @media print {
-          @page { size: A4; margin: 0; }
+          @page { 
+            size: A4; 
+            margin: 0; 
+          }
           html, body {
             width: 210mm;
             height: 297mm;
@@ -252,11 +269,68 @@ export default function App() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          body > div { display: block !important; height: 100%; }
-          .print-frame-scaler { transform: none !important; margin: 0 !important; width: 100% !important; height: 100% !important; }
-          .a4-frame { box-shadow: none !important; width: 100% !important; height: 100% !important; overflow: hidden !important; }
-          /* hide zoom controls at print */
-          .zoom-controls, .zoom-controls-outside { display: none !important; }
+          body > div { 
+            display: block !important; 
+            height: 100%; 
+          }
+          
+          /* Forțează layout desktop pentru print */
+          .print-frame-scaler { 
+            transform: none !important; 
+            margin: 0 !important; 
+            width: 100% !important; 
+            height: 100% !important; 
+          }
+          .a4-frame { 
+            box-shadow: none !important; 
+            width: 100% !important; 
+            height: 100% !important; 
+            overflow: hidden !important; 
+          }
+          
+          /* Ascunde ZoomControls la print */
+          .zoom-controls, .zoom-controls-outside { 
+            display: none !important; 
+          }
+          
+          /* Forțează layout desktop pentru toate componentele */
+          .print-frame-scaler,
+          .a4-frame,
+          .a4-frame > div {
+            transform: none !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: auto !important;
+          }
+          
+          /* Contact - forțează layout desktop (toate pe un rând) */
+          .relative.z-10.w-full.bg-slate-100.shadow-sm > div {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-evenly !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+          }
+          
+          /* Profile - forțează layout desktop (imagine + text orizontal) */
+          .flex.flex-col.md\\:flex-row,
+          .flex-row.items-start.gap-10 {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: start !important;
+            gap: 2.5rem !important;
+          }
+          
+          /* Grid-ul principal - forțează 3 coloane */
+          .grid.grid-cols-1.md\\:grid-cols-3,
+          .grid.grid-cols-1 {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+          
+          /* WorkExperience - forțează 3 coloane */
+          .grid.grid-cols-3 {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
         }
 
         /* ensure wrapper scales cleanly */
