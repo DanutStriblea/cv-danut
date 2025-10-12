@@ -24,28 +24,28 @@ export default function Contact() {
   if (isMobile) {
     return (
       <div className="relative z-10 w-full bg-slate-100 shadow-sm">
-        <div className="w-full px-4 py-3 flex flex-col gap-3 text-gray-700 text-xs">
-          {/* First row - Email, Phone, Location - perfectly centered */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+        <div className="w-full px-3 py-3 flex flex-col gap-3 text-gray-700 text-xs">
+          {/* First row - Email, Phone, Location - perfectly centered and spaced */}
+          <div className="flex justify-around items-center w-full">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <MailIcon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
               <span className="truncate">dan_22@yahoo.com</span>
             </div>
 
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <PhoneIcon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
               <span>077205910</span>
             </div>
 
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <LocationMarkerIcon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
               <span className="truncate">Brașov</span>
             </div>
           </div>
 
-          {/* Second row - Facebook, Instagram, TikTok - perfectly centered */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+          {/* Second row - Facebook, Instagram, TikTok - perfectly centered and spaced */}
+          <div className="flex justify-around items-center w-full">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <FaFacebook className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
               <a
                 href="https://www.facebook.com/striblea.danut"
@@ -57,7 +57,7 @@ export default function Contact() {
               </a>
             </div>
 
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <FaInstagram className="w-3.5 h-3.5 text-pink-500 flex-shrink-0" />
               <a
                 href="https://www.instagram.com/danut_striblea/"
@@ -69,7 +69,7 @@ export default function Contact() {
               </a>
             </div>
 
-            <div className="flex items-center gap-1.5 justify-center flex-1">
+            <div className="flex items-center gap-1.5 justify-center flex-1 min-w-0">
               <FaTiktok className="w-3.5 h-3.5 text-black flex-shrink-0" />
               <a
                 href="https://www.tiktok.com/@the.broken.vinyl"
