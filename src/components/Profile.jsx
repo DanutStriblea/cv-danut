@@ -46,14 +46,15 @@ export default function Profile() {
   // Mobile layout: Chenar Profil -> Poza -> Text (vertical)
   if (isMobile) {
     return (
-      <div className="w-full px-4 mb-1">
-        {/* Chenarul "Profil" - centrat */}
+      <div className="w-full px-4 mb-1 mt-4">
+        {" "}
+        {/* Added mt-4 for space from contacts */}
+        {/* Chenarul "Profil" - latime completa, centrat */}
         <div className="text-center mb-4">
-          <h2 className="bg-slate-300 py-1 rounded text-lg font-semibold font-montserrat inline-block px-8">
+          <h2 className="bg-slate-300 py-2 rounded text-lg font-semibold font-montserrat w-full">
             Profil
           </h2>
         </div>
-
         {/* Poza - centrată */}
         <div className="flex justify-center mb-4">
           <div
@@ -83,8 +84,7 @@ export default function Profile() {
             />
           </div>
         </div>
-
-        {/* Textul - centrat */}
+        {/* Textul - latime completa, centrat */}
         <div className="text-center">
           <p className="text-xs text-gray-700 leading-relaxed">
             Experiență în producție muzicală și gastronomie. Pasionat de IT,
