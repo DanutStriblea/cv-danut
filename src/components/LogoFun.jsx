@@ -31,13 +31,13 @@ export default function LogoFun({
       typeof window !== "undefined" &&
       ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
+    // create Audio element (don't set crossOrigin)
     try {
       const a = new Audio(audioFile);
       a.preload = "auto";
       a.loop = false;
       a.volume = MASTER_VOL;
       a.playsInline = true;
-      a.crossOrigin = "anonymous";
       audioRef.current = a;
       try {
         a.load();
@@ -48,6 +48,7 @@ export default function LogoFun({
       console.warn("audio init failed", initErr);
     }
 
+    // periodic visual burst
     const periodicBurst = () => {
       const burstCount = 5;
       for (let i = 0; i < burstCount; i++) {
@@ -58,9 +59,7 @@ export default function LogoFun({
       const el = logoRef.current;
       if (el && !logoHoveredRef.current) {
         el.classList.remove("logo-beat-2");
-        // force reflow
-        // eslint-disable-next-line no-unused-expressions
-        el.offsetWidth;
+        void el.offsetWidth;
         el.classList.add("logo-beat-2");
         const cleanupT = setTimeout(() => {
           el.classList.remove("logo-beat-2");
@@ -78,6 +77,7 @@ export default function LogoFun({
       console.warn("periodic setup failed", err);
     }
 
+    // setup first-gesture listener to prepare audio context
     const onFirstGesture = async () => {
       try {
         await ensureAudioContext(true);
@@ -112,6 +112,7 @@ export default function LogoFun({
       passive: true,
     });
 
+    // cleanup
     const timersSnapshot = cleanupTimersRef.current;
     const periodicSnapshot = periodicRef.current;
     const spawnSnapshot = spawnIntervalRef.current;
@@ -216,6 +217,7 @@ export default function LogoFun({
     cleanupTimersRef.current.add(t);
   };
 
+  // ensure audio context (create and connect) - should be called from a user gesture
   const ensureAudioContext = async (silentResume = false) => {
     if (userGestureInitializedRef.current) {
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -239,7 +241,6 @@ export default function LogoFun({
         return;
       }
 
-      // create context inside user gesture (caller should ensure it's a gesture)
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
@@ -514,7 +515,9 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
+  // --- MAIN: handle pointer down (touch/mobile) AND toggle play/stop robust
   const handlePointerDown = async (e) => {
+    // desktop click path handled separately if pointerType === "mouse"
     if (e && e.pointerType === "mouse") {
       handleDesktopClickSpin(e);
       return;
@@ -523,21 +526,10 @@ export default function LogoFun({
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
 
     const el = logoRef.current;
-    if (!el) return;
     const a = audioRef.current;
-    if (!a) return;
+    if (!el || !a) return;
 
-    // Synchronously attempt play inside gesture
-    let playedSync = false;
-    try {
-      const p = a.play();
-      if (p && typeof p.then === "function") await p;
-      playedSync = true;
-    } catch (err) {
-      console.warn("initial play() in pointerdown failed", err);
-    }
-
-    // Initialize/resume audio context after calling play()
+    // Ensure audio context exists BEFORE calling play (important for mobile)
     try {
       await ensureAudioContext(true);
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -551,21 +543,10 @@ export default function LogoFun({
       console.warn("ensureAudioContext failed (touch)", err);
     }
 
-    // Retry play if needed
-    if (!isPlayingRef.current && !playedSync) {
-      try {
-        const p2 = a.play();
-        if (p2 && typeof p2.then === "function") await p2;
-        playedSync = true;
-      } catch (err2) {
-        console.warn("retry play after ensureAudioContext failed", err2);
-      }
-    }
-
-    // Toggle stop if already playing
+    // If already playing -> stop sequence (fade out)
     if (isPlayingRef.current) {
       el.classList.remove("logo-spin");
-      el.offsetWidth;
+      void el.offsetWidth;
       el.classList.add("logo-spin");
       const cleanupSpinStop = setTimeout(() => {
         el.classList.remove("logo-spin");
@@ -587,7 +568,7 @@ export default function LogoFun({
       return;
     }
 
-    // Start path
+    // Not playing -> start
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -601,7 +582,7 @@ export default function LogoFun({
     }
 
     el.classList.remove("logo-spin");
-    el.offsetWidth;
+    void el.offsetWidth;
     el.classList.add("logo-spin");
     const cleanupSpin = setTimeout(() => {
       el.classList.remove("logo-spin");
@@ -609,6 +590,15 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
+    // Attempt to play (should succeed because we created/resumed context earlier)
+    try {
+      const playP = a.play();
+      if (playP && typeof playP.then === "function") await playP;
+    } catch (playErr) {
+      console.warn("play() failed at touch start", playErr);
+    }
+
+    // Fade-in
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -634,6 +624,7 @@ export default function LogoFun({
     }
   };
 
+  // desktop-only visual spin on click (uses event to prevent default)
   const handleDesktopClickSpin = (e) => {
     if (e && e.preventDefault) {
       e.preventDefault();
@@ -643,7 +634,7 @@ export default function LogoFun({
     const el = logoRef.current;
     if (!el) return;
     el.classList.remove("logo-spin");
-    el.offsetWidth;
+    void el.offsetWidth;
     el.classList.add("logo-spin");
     const cleanup = setTimeout(() => {
       el.classList.remove("logo-spin");
