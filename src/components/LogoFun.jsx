@@ -39,7 +39,6 @@ export default function LogoFun({
       a.playsInline = true;
       a.crossOrigin = "anonymous";
       audioRef.current = a;
-      // try to nudge the browser to fetch metadata (may be ignored by strict autoplay policies)
       try {
         a.load();
       } catch (loadErr) {
@@ -240,6 +239,7 @@ export default function LogoFun({
         return;
       }
 
+      // create context inside user gesture (caller should ensure it's a gesture)
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
 
@@ -255,9 +255,9 @@ export default function LogoFun({
         console.warn("createMediaElementSource failed", sourceErr);
       }
 
-      if (silentResume) {
+      if (silentResume && ctx.state === "suspended") {
         try {
-          if (ctx.state === "suspended") await ctx.resume();
+          await ctx.resume();
         } catch (resumeErr) {
           console.warn("silent resume failed", resumeErr);
         }
@@ -514,37 +514,56 @@ export default function LogoFun({
     isPlayingRef.current = false;
   };
 
-  // unified pointerdown handler: immediate play for touch, mouse -> visual spin only
   const handlePointerDown = async (e) => {
-    // if mouse pointer -> desktop visual spin only
-    if (e && e.pointerType && e.pointerType === "mouse") {
-      // preserve existing desktop spin behaviour
+    if (e && e.pointerType === "mouse") {
       handleDesktopClickSpin(e);
       return;
     }
 
-    // for touch/pencil, stop propagation but do not prevent default (to avoid blocking pinch)
     if (e && typeof e.stopPropagation === "function") e.stopPropagation();
 
     const el = logoRef.current;
     if (!el) return;
-
     const a = audioRef.current;
     if (!a) return;
 
-    // Call play() synchronously inside user gesture to satisfy mobile autoplay policies.
-    let played = false;
+    // Synchronously attempt play inside gesture
+    let playedSync = false;
     try {
       const p = a.play();
       if (p && typeof p.then === "function") await p;
-      played = true;
-    } catch (playErr) {
-      console.warn("initial play() in pointerdown failed", playErr);
+      playedSync = true;
+    } catch (err) {
+      console.warn("initial play() in pointerdown failed", err);
     }
 
-    // continue with toggle logic as before
-    if (isPlayingRef.current && played) {
-      // currently playing -> stop
+    // Initialize/resume audio context after calling play()
+    try {
+      await ensureAudioContext(true);
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        try {
+          await audioCtxRef.current.resume();
+        } catch (resumeErr) {
+          console.warn("resume audioCtx failed", resumeErr);
+        }
+      }
+    } catch (err) {
+      console.warn("ensureAudioContext failed (touch)", err);
+    }
+
+    // Retry play if needed
+    if (!isPlayingRef.current && !playedSync) {
+      try {
+        const p2 = a.play();
+        if (p2 && typeof p2.then === "function") await p2;
+        playedSync = true;
+      } catch (err2) {
+        console.warn("retry play after ensureAudioContext failed", err2);
+      }
+    }
+
+    // Toggle stop if already playing
+    if (isPlayingRef.current) {
       el.classList.remove("logo-spin");
       el.offsetWidth;
       el.classList.add("logo-spin");
@@ -568,7 +587,7 @@ export default function LogoFun({
       return;
     }
 
-    // start spawn + prepare audio
+    // Start path
     logoHoveredRef.current = true;
     startSpawning();
 
@@ -581,31 +600,6 @@ export default function LogoFun({
       console.warn("set currentTime failed", timeErr);
     }
 
-    // ensure audio context exists/resumed (silent) after calling play()
-    try {
-      await ensureAudioContext(true);
-      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
-        try {
-          await audioCtxRef.current.resume();
-        } catch (resumeErr) {
-          console.warn("resume audioCtx failed", resumeErr);
-        }
-      }
-    } catch (err) {
-      console.warn("ensureAudioContext failed (touch)", err);
-    }
-
-    // if initial play didn't succeed, retry
-    if (!isPlayingRef.current) {
-      try {
-        const p2 = a.play();
-        if (p2 && typeof p2.then === "function") await p2;
-      } catch (playErr2) {
-        console.warn("play() still failed after ensureAudioContext", playErr2);
-      }
-    }
-
-    // spin visual on touch
     el.classList.remove("logo-spin");
     el.offsetWidth;
     el.classList.add("logo-spin");
@@ -615,7 +609,6 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
-    // fade in
     try {
       if (audioCtxRef.current && gainRef.current) {
         gainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
@@ -641,7 +634,6 @@ export default function LogoFun({
     }
   };
 
-  // desktop click: visual spin only — absolutely no audio interaction here
   const handleDesktopClickSpin = (e) => {
     if (e && e.preventDefault) {
       e.preventDefault();
