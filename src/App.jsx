@@ -30,18 +30,6 @@ export default function App() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
-    // Add print mode class handlers
-    const handleBeforePrint = () => {
-      document.body.classList.add("print-mode");
-    };
-
-    const handleAfterPrint = () => {
-      document.body.classList.remove("print-mode");
-    };
-
-    window.addEventListener("beforeprint", handleBeforePrint);
-    window.addEventListener("afterprint", handleAfterPrint);
-
     const recomputeScales = () => {
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
@@ -138,8 +126,6 @@ export default function App() {
           }
           observer.disconnect();
           window.removeEventListener("resize", checkMobile);
-          window.removeEventListener("beforeprint", handleBeforePrint);
-          window.removeEventListener("afterprint", handleAfterPrint);
         } catch (err) {
           console.warn("cleanup failed in App scale effect", err);
         }
@@ -148,8 +134,6 @@ export default function App() {
 
     return () => {
       window.removeEventListener("resize", checkMobile);
-      window.removeEventListener("beforeprint", handleBeforePrint);
-      window.removeEventListener("afterprint", handleAfterPrint);
     };
   }, [contentScale, frameHeight, frameWidth, isMobile]);
 
@@ -174,7 +158,7 @@ export default function App() {
     <div
       className="flex justify-center items-center min-h-screen 
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
-                    print:bg-transparent overflow-auto py-2 print:p-0 print:min-h-0"
+                    print:bg-white overflow-auto py-2 print:py-0 print:min-h-0"
     >
       {/* Wrapper centrat vertical și orizontal */}
       <div
@@ -197,7 +181,7 @@ export default function App() {
         <div
           className="
             a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
-            print:shadow-none print:rounded-none
+            print:shadow-none print:bg-white
           "
           style={
             isMobile
@@ -205,12 +189,10 @@ export default function App() {
                   width: "100%",
                   height: "auto",
                   minHeight: `${frameHeight}px`,
-                  position: "relative",
                 }
               : {
                   width: `${frameWidth}px`,
                   height: `${frameHeight}px`,
-                  position: "relative",
                 }
           }
         >
@@ -256,88 +238,64 @@ export default function App() {
         @media print {
           @page { 
             size: A4; 
-            margin: 0; 
+            margin: 0mm;
           }
           html, body {
             width: 210mm;
             height: 297mm;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
           }
-          body {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+          body > * {
+            visibility: hidden;
           }
-          body > div { 
-            display: block !important; 
-            height: 100%; 
-          }
-          
-          /* Forțează layout desktop pentru print */
-          .print-frame-scaler { 
-            transform: none !important; 
-            margin: 0 !important; 
-            width: 100% !important; 
-            height: 100% !important; 
-          }
-          .a4-frame { 
-            box-shadow: none !important; 
-            width: 100% !important; 
-            height: 100% !important; 
-            overflow: hidden !important; 
-          }
-          
-          /* Ascunde ZoomControls la print */
-          .zoom-controls, .zoom-controls-outside { 
-            display: none !important; 
-          }
-          
-          /* Forțează layout desktop pentru toate componentele */
           .print-frame-scaler,
-          .a4-frame,
+          .print-frame-scaler * {
+            visibility: visible;
+          }
+          .print-frame-scaler {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            transform: none !important;
+            margin: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            max-width: none !important;
+          }
+          .a4-frame {
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
           .a4-frame > div {
             transform: none !important;
             width: 100% !important;
             height: auto !important;
-            min-height: auto !important;
+            min-height: 297mm !important;
           }
-          
-          /* Contact - forțează layout desktop (toate pe un rând) */
-          .relative.z-10.w-full.bg-slate-100.shadow-sm > div {
-            display: flex !important;
-            flex-direction: row !important;
-            justify-content: space-evenly !important;
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
-          }
-          
-          /* Profile - forțează layout desktop (imagine + text orizontal) */
-          .flex.flex-col.md\\:flex-row,
-          .flex-row.items-start.gap-10 {
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: start !important;
-            gap: 2.5rem !important;
-          }
-          
-          /* Grid-ul principal - forțează 3 coloane */
-          .grid.grid-cols-1.md\\:grid-cols-3,
-          .grid.grid-cols-1 {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-          
-          /* WorkExperience - forțează 3 coloane */
-          .grid.grid-cols-3 {
-            grid-template-columns: repeat(3, 1fr) !important;
+          .zoom-controls {
+            display: none !important;
           }
         }
 
         /* ensure wrapper scales cleanly */
-        .print-frame-scaler { display: inline-block; box-sizing: border-box; }
+        .print-frame-scaler { 
+          display: inline-block; 
+          box-sizing: border-box; 
+        }
 
         /* safety: keep touch gestures available */
-        html, body { -webkit-text-size-adjust: 100%; touch-action: auto; }
+        html, body { 
+          -webkit-text-size-adjust: 100%; 
+          touch-action: auto; 
+        }
       `}</style>
     </div>
   );
