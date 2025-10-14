@@ -18,13 +18,15 @@ export default function App() {
   const vvHandlerRef = useRef(null);
   const pinchTimerRef = useRef(null);
 
-  const frameWidth = 794;
+  const frameWidth = 794; // px target for desktop layout
   const frameHeight = 1123;
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
     };
+
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
@@ -33,12 +35,15 @@ export default function App() {
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
         const newContentScale = Math.min(1, frameHeight / contentHeight);
-        if (newContentScale !== contentScale) setContentScale(newContentScale);
+        if (newContentScale !== contentScale) {
+          setContentScale(newContentScale);
+        }
       }
       if (!isMobile) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
-        setFrameScale(Math.min(1, scaleToWidth, scaleToHeight));
+        const newFrameScale = Math.min(1, scaleToWidth, scaleToHeight);
+        setFrameScale(newFrameScale);
       }
     };
 
@@ -97,7 +102,6 @@ export default function App() {
 
       const onBeforePrint = () => {
         setIsPrinting(true);
-        document.body.classList.add("force-print-desktop");
         try {
           if (visualViewport && vvHandlerRef.current) {
             visualViewport.removeEventListener("resize", vvHandlerRef.current);
@@ -106,6 +110,7 @@ export default function App() {
           setFrameScale(1);
           setContentScale(1);
           setUserZoom(1);
+          // ensure no runtime transform lingers on root elements
           document.documentElement.style.transform = "none";
           document.body.style.transform = "none";
         } catch (err) {
@@ -115,7 +120,6 @@ export default function App() {
 
       const onAfterPrint = () => {
         setIsPrinting(false);
-        document.body.classList.remove("force-print-desktop");
         try {
           if (visualViewport && vvHandlerRef.current) {
             visualViewport.addEventListener("resize", vvHandlerRef.current, {
@@ -167,12 +171,19 @@ export default function App() {
 
   const ZOOM_STEP = 0.15;
   const handleZoomIn = () =>
-    setUserZoom((z) => Math.min(3, +(z * (1 + ZOOM_STEP)).toFixed(4)));
+    setUserZoom((z) => {
+      const next = +(z * (1 + ZOOM_STEP)).toFixed(4);
+      return Math.min(3, next);
+    });
   const handleZoomOut = () =>
-    setUserZoom((z) => Math.max(0.25, +(z / (1 + ZOOM_STEP)).toFixed(4)));
+    setUserZoom((z) => {
+      const next = +(z / (1 + ZOOM_STEP)).toFixed(4);
+      return Math.max(0.25, next);
+    });
 
   const combinedScale = isPrinting ? 1 : frameScale * userZoom;
 
+  // print wrapper inline styles: when printing always enforce A4 mm size and fixed centering
   const printWrapperStyle = isPrinting
     ? {
         width: "210mm",
@@ -198,15 +209,32 @@ export default function App() {
       };
 
   const a4Style = isPrinting
-    ? { width: "210mm", height: "297mm" }
+    ? {
+        width: "210mm",
+        height: "297mm",
+      }
     : isMobile
-    ? { width: "100%", height: "auto", minHeight: `${frameHeight}px` }
-    : { width: `${frameWidth}px`, height: `${frameHeight}px` };
+    ? {
+        width: "100%",
+        height: "auto",
+        minHeight: `${frameHeight}px`,
+      }
+    : {
+        width: `${frameWidth}px`,
+        height: `${frameHeight}px`,
+      };
 
   const contentStyle = isPrinting
-    ? { width: "210mm", height: "auto", transform: "none" }
+    ? {
+        width: "210mm",
+        height: "auto",
+        transform: "none",
+      }
     : isMobile
-    ? { width: "100%", height: "auto" }
+    ? {
+        width: "100%",
+        height: "auto",
+      }
     : {
         width: `${compensatedWidth}px`,
         height: `${compensatedHeight}px`,
@@ -252,65 +280,22 @@ export default function App() {
         @media print {
           @page { size: A4 portrait; margin: 0; }
 
-          html, body, #root {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            overflow: hidden !important;
-            transform: none !important;
-            -webkit-transform: none !important;
-            box-sizing: border-box !important;
-            background: white !important;
-          }
+          /* hide any scrollbar gutter artifacts */
+          html, body, #root { margin:0 !important; padding:0 !important; width:210mm !important; height:297mm !important; overflow:hidden !important; -webkit-transform:none !important; transform:none !important; }
 
-          /* Desktop-style print regardless of device when body.force-print-desktop present */
-          body.force-print-desktop .print-frame-scaler {
-            position: fixed !important;
-            top: 0 !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            margin: 0 !important;
-            overflow: hidden !important;
-          }
+          /* force the wrapper exactly A4 and centered horizontally in print preview */
+          .print-frame-scaler { position: fixed !important; top: 0 !important; left: 50% !important; transform: translateX(-50%) !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; overflow:hidden !important; }
 
-          body.force-print-desktop .a4-frame {
-            width: 210mm !important;
-            height: 297mm !important;
-            box-shadow: none !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-          }
+          .a4-frame { width: 210mm !important; height: 297mm !important; box-shadow: none !important; background: white !important; margin:0 !important; padding:0 !important; overflow:hidden !important; }
 
-          body.force-print-desktop .a4-frame > div {
-            width: 210mm !important;
-            height: auto !important;
-            min-height: 297mm !important;
-            transform: none !important;
-            overflow: visible !important;
-            padding: 0 !important;
-            box-sizing: border-box !important;
-            page-break-inside: avoid !important;
-          }
+          .a4-frame > div { width: 210mm !important; height: auto !important; min-height: 297mm !important; transform: none !important; overflow: visible !important; padding:0 !important; }
 
-          /* hide scrollbars in print preview */
+          /* hide scrollbars in WebKit/Chromium */
           ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+          /* for firefox */
           html { scrollbar-width: none !important; }
 
-          .zoom-controls,
-          .vite-error-overlay,
-          .audio-enable-pill,
-          [class*="overlay"],
-          [class*="popup"],
-          [class*="modal"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-          }
+          .zoom-controls, .vite-error-overlay, .audio-enable-pill, [class*="overlay"], [class*="popup"], [class*="modal"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
 
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
