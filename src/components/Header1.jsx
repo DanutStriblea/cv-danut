@@ -16,7 +16,7 @@ export default function Header1() {
         </span>
       </button>
 
-      {/* Buton print în colțul dreapta sus */}
+      {/* Buton print în colțul dreapta suss */}
       <button
         onClick={() => window.print()}
         className="absolute top-6 right-6 flex items-center gap-2 text-white 
