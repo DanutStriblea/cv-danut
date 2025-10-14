@@ -22,7 +22,6 @@ export default function App() {
   const frameHeight = 1123;
 
   useEffect(() => {
-    // Check if mobile device
     const checkMobile = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
@@ -32,7 +31,7 @@ export default function App() {
     window.addEventListener("resize", checkMobile);
 
     const recomputeScales = () => {
-      if (isPrinting) return; // don't recompute while printing
+      if (isPrinting) return;
       if (contentRef.current) {
         const contentHeight = contentRef.current.scrollHeight;
         const newContentScale = Math.min(1, frameHeight / contentHeight);
@@ -40,8 +39,6 @@ export default function App() {
           setContentScale(newContentScale);
         }
       }
-
-      // Don't compute frame scale on mobile - let browser handle UI zoom
       if (!isMobile) {
         const scaleToWidth = (window.innerWidth - 32) / frameWidth;
         const scaleToHeight = (window.innerHeight - 32) / frameHeight;
@@ -50,12 +47,9 @@ export default function App() {
       }
     };
 
-    // initial compute
     recomputeScales();
 
-    // On mobile, don't set up the complex scaling listeners
     if (!isMobile) {
-      // prefer visualViewport when available to detect pinch gestures
       const visualViewport = window.visualViewport;
       let lastVVScale = visualViewport ? visualViewport.scale || 1 : 1;
 
@@ -69,7 +63,7 @@ export default function App() {
       };
 
       const onVVChange = () => {
-        if (isPrinting) return; // ignore VV changes while printing
+        if (isPrinting) return;
         const cur = visualViewport ? visualViewport.scale || 1 : 1;
         if (Math.abs(cur - lastVVScale) > 0.001) {
           lastVVScale = cur;
@@ -91,7 +85,6 @@ export default function App() {
       window.addEventListener("resize", recomputeScales);
       window.addEventListener("orientationchange", recomputeScales);
 
-      // Mutation observer for content changes
       const observer = new MutationObserver(() => {
         if (pinchTimerRef.current) clearTimeout(pinchTimerRef.current);
         pinchTimerRef.current = setTimeout(() => {
@@ -107,26 +100,24 @@ export default function App() {
         });
       }
 
-      // beforeprint / afterprint handling
       const onBeforePrint = () => {
         setIsPrinting(true);
-        // remove visualViewport listeners to avoid pinch/zoom interference
         try {
           if (visualViewport && vvHandlerRef.current) {
             visualViewport.removeEventListener("resize", vvHandlerRef.current);
             visualViewport.removeEventListener("scroll", vvHandlerRef.current);
           }
-          // ensure transforms cleared
           setFrameScale(1);
           setContentScale(1);
           setUserZoom(1);
-        } catch {
-          // silent
+          document.documentElement.style.transform = "none";
+          document.body.style.transform = "none";
+        } catch (err) {
+          console.warn("onBeforePrint cleanup failed:", err);
         }
       };
       const onAfterPrint = () => {
         setIsPrinting(false);
-        // restore listeners and recompute
         try {
           if (visualViewport && vvHandlerRef.current) {
             visualViewport.addEventListener("resize", vvHandlerRef.current, {
@@ -136,8 +127,8 @@ export default function App() {
               passive: true,
             });
           }
-        } catch {
-          // silent
+        } catch (err) {
+          console.warn("onAfterPrint restore failed:", err);
         }
         recomputeScales();
       };
@@ -162,8 +153,8 @@ export default function App() {
           window.removeEventListener("beforeprint", onBeforePrint);
           window.removeEventListener("afterprint", onAfterPrint);
           window.removeEventListener("resize", checkMobile);
-        } catch {
-          console.warn("cleanup failed in App scale effect");
+        } catch (err) {
+          console.warn("cleanup failed in App scale effect:", err);
         }
       };
     }
@@ -196,7 +187,6 @@ export default function App() {
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
                     print:bg-white overflow-auto py-2 print:py-0 print:min-h-0"
     >
-      {/* Wrapper centrat vertical și orizontal */}
       <div
         className="mx-auto print-frame-scaler"
         style={
@@ -214,7 +204,6 @@ export default function App() {
               }
         }
       >
-        {/* Rama A4 */}
         <div
           className="
             a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
@@ -233,7 +222,6 @@ export default function App() {
                 }
           }
         >
-          {/* Conținutul CV-ului */}
           <div
             ref={contentRef}
             style={
@@ -265,18 +253,13 @@ export default function App() {
         </div>
       </div>
 
-      {/* Hide zoom controls on mobile and during print */}
       {!isMobile && !isPrinting && (
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
 
-      {/* Stiluri pentru print - FĂRĂ DUNGI NEGRE ȘI CU PADDING-URI CORECTE */}
       <style>{`
         @media print {
-          @page {
-            size: A4 portrait;
-            margin: 0;
-          }
+          @page { size: A4 portrait; margin: 0; }
 
           html, body, #root {
             width: 210mm !important;
@@ -284,7 +267,7 @@ export default function App() {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-            overflow: visible !important;
+            overflow: hidden !important;
             -webkit-transform: none !important;
             transform: none !important;
           }

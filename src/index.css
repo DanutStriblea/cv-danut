@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* General safe defaults */
 html,
 body,
 #root {
@@ -10,6 +9,7 @@ body,
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
+  box-sizing: border-box;
 }
 
 /* Notes animation */
@@ -54,6 +54,7 @@ body,
 
 .a4-frame {
   position: relative;
+  box-sizing: border-box;
 }
 
 /* Mobile only (phones ≤768px) */
@@ -132,9 +133,10 @@ body,
     padding: 0 !important;
     width: 210mm !important;
     height: 297mm !important;
-    overflow: visible !important;
-    -webkit-transform: none !important;
+    overflow: hidden !important;
     transform: none !important;
+    -webkit-transform: none !important;
+    box-sizing: border-box !important;
   }
 
   .print-frame-scaler {
@@ -145,12 +147,70 @@ body,
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   .a4-frame {
     width: 210mm !important;
     height: 297mm !important;
     box-shadow: none !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .a4-frame > div {
+    width: calc(210mm - 0mm) !important;
+    height: auto !important;
+    min-height: 297mm !important;
+    transform: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+  }
+
+  .px-6 {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    box-sizing: border-box !important;
+  }
+  .pt-4 {
+    padding-top: 1rem !important;
+    box-sizing: border-box !important;
+  }
+  .pb-2 {
+    padding-bottom: 0.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .grid.grid-cols-1.md\\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 1.5rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 0.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .zoom-controls,
+  .vite-error-overlay,
+  .audio-enable-pill,
+  [class*="overlay"],
+  [class*="popup"],
+  [class*="modal"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  /* eliminate any possible chrome print margin artifacts */
+  @page {
+    margin: 0;
+    size: A4 portrait;
   }
 }
