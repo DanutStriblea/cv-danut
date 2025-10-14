@@ -110,14 +110,12 @@ export default function App() {
           setFrameScale(1);
           setContentScale(1);
           setUserZoom(1);
-          // ensure no runtime transform lingers on root elements
           document.documentElement.style.transform = "none";
           document.body.style.transform = "none";
         } catch (err) {
           console.warn("onBeforePrint cleanup failed:", err);
         }
       };
-
       const onAfterPrint = () => {
         setIsPrinting(false);
         try {
@@ -183,80 +181,63 @@ export default function App() {
 
   const combinedScale = isPrinting ? 1 : frameScale * userZoom;
 
-  // print wrapper inline styles: when printing always enforce A4 mm size and fixed centering
-  const printWrapperStyle = isPrinting
-    ? {
-        width: "210mm",
-        height: "297mm",
-        transform: "none",
-        position: "fixed",
-        top: 0,
-        left: "50%",
-        margin: 0,
-        transformOrigin: "top center",
-        msTransform: "none",
-      }
-    : isMobile
-    ? {
-        width: "100%",
-        maxWidth: `${frameWidth}px`,
-        margin: "0 auto",
-      }
-    : {
-        transform: `scale(${combinedScale})`,
-        transformOrigin: "top center",
-        position: "relative",
-      };
-
-  const a4Style = isPrinting
-    ? {
-        width: "210mm",
-        height: "297mm",
-      }
-    : isMobile
-    ? {
-        width: "100%",
-        height: "auto",
-        minHeight: `${frameHeight}px`,
-      }
-    : {
-        width: `${frameWidth}px`,
-        height: `${frameHeight}px`,
-      };
-
-  const contentStyle = isPrinting
-    ? {
-        width: "210mm",
-        height: "auto",
-        transform: "none",
-      }
-    : isMobile
-    ? {
-        width: "100%",
-        height: "auto",
-      }
-    : {
-        width: `${compensatedWidth}px`,
-        height: `${compensatedHeight}px`,
-        transform: `scale(${contentScale})`,
-        transformOrigin: "top left",
-      };
-
   return (
     <div
       className="flex justify-center items-center min-h-screen 
                     bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 
                     print:bg-white overflow-auto py-2 print:py-0 print:min-h-0"
     >
-      <div className="mx-auto print-frame-scaler" style={printWrapperStyle}>
+      <div
+        className="mx-auto print-frame-scaler"
+        style={
+          isMobile || isPrinting
+            ? {
+                width: "100%",
+                maxWidth: `${frameWidth}px`,
+                margin: "0 auto",
+                transform: "none",
+              }
+            : {
+                transform: `scale(${combinedScale})`,
+                transformOrigin: "top center",
+                position: "relative",
+              }
+        }
+      >
         <div
           className="
             a4-frame bg-white shadow-[0_8px_30px_rgba(0,0,0,0.60)] overflow-hidden
             print:shadow-none print:bg-white print:border-0
           "
-          style={a4Style}
+          style={
+            isMobile || isPrinting
+              ? {
+                  width: "100%",
+                  height: "auto",
+                  minHeight: `${frameHeight}px`,
+                }
+              : {
+                  width: `${frameWidth}px`,
+                  height: `${frameHeight}px`,
+                }
+          }
         >
-          <div ref={contentRef} style={contentStyle}>
+          <div
+            ref={contentRef}
+            style={
+              isMobile || isPrinting
+                ? {
+                    width: "100%",
+                    height: "auto",
+                  }
+                : {
+                    width: `${compensatedWidth}px`,
+                    height: `${compensatedHeight}px`,
+                    transform: `scale(${contentScale})`,
+                    transformOrigin: "top left",
+                  }
+            }
+          >
             <Header1 />
             <Contact />
             <Profile />
@@ -280,22 +261,72 @@ export default function App() {
         @media print {
           @page { size: A4 portrait; margin: 0; }
 
-          /* hide any scrollbar gutter artifacts */
-          html, body, #root { margin:0 !important; padding:0 !important; width:210mm !important; height:297mm !important; overflow:hidden !important; -webkit-transform:none !important; transform:none !important; }
+          html, body, #root {
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+            -webkit-transform: none !important;
+            transform: none !important;
+          }
 
-          /* force the wrapper exactly A4 and centered horizontally in print preview */
-          .print-frame-scaler { position: fixed !important; top: 0 !important; left: 50% !important; transform: translateX(-50%) !important; width: 210mm !important; height: 297mm !important; margin: 0 !important; overflow:hidden !important; }
+          .print-frame-scaler {
+            transform: none !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            display: block !important;
+            position: relative !important;
+            overflow: visible !important;
+          }
 
-          .a4-frame { width: 210mm !important; height: 297mm !important; box-shadow: none !important; background: white !important; margin:0 !important; padding:0 !important; overflow:hidden !important; }
+          .a4-frame {
+            width: 210mm !important;
+            height: 297mm !important;
+            box-shadow: none !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
 
-          .a4-frame > div { width: 210mm !important; height: auto !important; min-height: 297mm !important; transform: none !important; overflow: visible !important; padding:0 !important; }
+          .a4-frame > div {
+            transform: none !important;
+            width: 210mm !important;
+            height: auto !important;
+            min-height: 297mm !important;
+            display: block !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
 
-          /* hide scrollbars in WebKit/Chromium */
-          ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
-          /* for firefox */
-          html { scrollbar-width: none !important; }
+          .px-6 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+          .pt-4 { padding-top: 1rem !important; }
+          .pb-2 { padding-bottom: 0.5rem !important; }
 
-          .zoom-controls, .vite-error-overlay, .audio-enable-pill, [class*="overlay"], [class*="popup"], [class*="modal"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+          .grid.grid-cols-1.md\\:grid-cols-3 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1.5rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            padding-top: 1rem !important;
+            padding-bottom: 0.5rem !important;
+          }
+
+          .zoom-controls,
+          .vite-error-overlay,
+          .audio-enable-pill,
+          [class*="overlay"],
+          [class*="popup"],
+          [class*="modal"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
 
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
