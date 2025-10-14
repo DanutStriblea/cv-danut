@@ -120,7 +120,7 @@ export default function App() {
           setFrameScale(1);
           setContentScale(1);
           setUserZoom(1);
-        } catch (e) {
+        } catch {
           // silent
         }
       };
@@ -136,7 +136,7 @@ export default function App() {
               passive: true,
             });
           }
-        } catch (e) {
+        } catch {
           // silent
         }
         recomputeScales();
@@ -162,8 +162,8 @@ export default function App() {
           window.removeEventListener("beforeprint", onBeforePrint);
           window.removeEventListener("afterprint", onAfterPrint);
           window.removeEventListener("resize", checkMobile);
-        } catch (err) {
-          console.warn("cleanup failed in App scale effect", err);
+        } catch {
+          console.warn("cleanup failed in App scale effect");
         }
       };
     }
