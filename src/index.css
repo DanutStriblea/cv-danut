@@ -100,7 +100,7 @@ body,
   }
 }
 
-/* Robust print styles */
+/* Robust print styless */
 @media print {
   * {
     -webkit-print-color-adjust: exact;
