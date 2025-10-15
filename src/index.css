@@ -10,6 +10,8 @@ body,
   -ms-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Notes animation */
@@ -246,6 +248,7 @@ body.printing .print-frame-scaler,
   padding: 0 !important;
   display: block !important;
   overflow: visible !important;
+  box-sizing: border-box !important;
 }
 
 /* Make sure the a4 frame itself is exact */
@@ -310,7 +313,7 @@ html.printing * {
   print-color-adjust: exact !important;
 }
 
-/* --- Hard overrides for mobile print preview (place at EOF of index.css) --- */
+/* --- Hard overrides for mobile print preview (place at EOF) --- */
 /* Ensure the printing class is applied first (html.printing / body.printing / #root.printing) */
 html.printing,
 body.printing,
@@ -429,4 +432,36 @@ body.printing * {
   print-color-adjust: exact !important;
   -webkit-backface-visibility: visible !important;
   backface-visibility: visible !important;
+}
+
+/* Force the 3-column grid in print so cards stay side-by-side as on-screen */
+@media print {
+  /* target exact container din App.jsx: .grid.grid-cols-1.md\:grid-cols-3 */
+  .grid.grid-cols-1.md\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+    align-items: start !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 0.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure the direct children don't expand to full width or get hidden */
+  .grid.grid-cols-1.md\:grid-cols-3 > * {
+    width: auto !important;
+    min-width: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* If a child card uses max-width or flex that collapses it, reset those */
+  .grid.grid-cols-1.md\:grid-cols-3 > * .a4-frame,
+  .grid.grid-cols-1.md\:grid-cols-3 > * .print-frame-scaler {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }

@@ -100,7 +100,7 @@ export default function App() {
         });
       }
 
-      const setPrintingClass = (on) => {
+      const applyPrintingClass = (on) => {
         try {
           if (on) {
             document.documentElement.classList.add("printing");
@@ -119,24 +119,34 @@ export default function App() {
       };
 
       const onBeforePrint = () => {
+        // ensure printing class is applied first
+        applyPrintingClass(true);
         setIsPrinting(true);
         setFrameScale(1);
         setContentScale(1);
-        // mobile print scaling start at 69%
-        if (isMobile) {
+
+        // mobile: tighter scaling so A4 fits in mobile print preview (69%)
+        if (window.innerWidth <= 768) {
           setUserZoom(0.69);
         } else {
           setUserZoom(1);
         }
-        setPrintingClass(true);
+
+        // small delay to let the browser apply class/layout before print dialog
+        setTimeout(() => {
+          // optional: force a reflow/read to encourage layout stabilization
+          // eslint-disable-next-line no-unused-expressions
+          document.body && document.body.offsetHeight;
+        }, 40);
       };
+
       const onAfterPrint = () => {
         setIsPrinting(false);
-        setPrintingClass(false);
+        applyPrintingClass(false);
         recomputeScales();
       };
 
-      // matchMedia print listener (handler named to avoid unused param)
+      // matchMedia print listener (named handler to avoid unused param)
       let mql = null;
       const handleMqlChange = (mqEvent) => {
         if (mqEvent.matches) onBeforePrint();
@@ -186,7 +196,7 @@ export default function App() {
               /* ignore */
             }
           }
-          setPrintingClass(false);
+          applyPrintingClass(false);
           window.removeEventListener("resize", checkMobile);
         } catch (err) {
           console.warn("cleanup failed in App scale effect:", err);
@@ -292,118 +302,6 @@ export default function App() {
       {!isMobile && !isPrinting && (
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
-
-      <style>{`
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-
-          html, body, #root {
-            width: 210mm !important;
-            height: 297mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
-            -webkit-transform: none !important;
-            transform: none !important;
-          }
-
-          .print-frame-scaler {
-            transform: none !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            margin: 0 !important;
-            display: block !important;
-            position: relative !important;
-            overflow: visible !important;
-          }
-
-          .a4-frame {
-            width: 210mm !important;
-            height: 297mm !important;
-            box-shadow: none !important;
-            background: white !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-            overflow: visible !important;
-          }
-
-          .a4-frame > div {
-            transform: none !important;
-            width: 210mm !important;
-            height: auto !important;
-            min-height: 297mm !important;
-            display: block !important;
-            overflow: visible !important;
-            padding: 0 !important;
-          }
-
-          .px-6 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
-          .pt-4 { padding-top: 1rem !important; }
-          .pb-2 { padding-bottom: 0.5rem !important; }
-
-          .grid.grid-cols-1.md\\:grid-cols-3 {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 1.5rem !important;
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
-            padding-top: 1rem !important;
-            padding-bottom: 0.5rem !important;
-          }
-
-          .zoom-controls,
-          .vite-error-overlay,
-          .audio-enable-pill,
-          [class*="overlay"],
-          [class*="popup"],
-          [class*="modal"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-          }
-
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-
-        /* Force consistent A4 layout for mobile print previews when printing class is present */
-        body.printing .print-frame-scaler,
-        body.printing .a4-frame,
-        body.printing .a4-frame > div,
-        body.printing html,
-        body.printing body,
-        body.printing #root {
-          width: 210mm !important;
-          height: 297mm !important;
-          transform: none !important;
-          -webkit-transform: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow: visible !important;
-          box-sizing: border-box !important;
-          background: white !important;
-        }
-
-        body.printing .zoom-controls,
-        body.printing .zoom-controls-outside,
-        body.printing .vite-error-overlay,
-        body.printing .audio-enable-pill,
-        body.printing [class*="overlay"],
-        body.printing [class*="popup"],
-        body.printing [class*="modal"] {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-        }
-
-        body.printing .print-frame-scaler {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          display: block !important;
-        }
-      `}</style>
     </div>
   );
 }
