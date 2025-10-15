@@ -134,7 +134,7 @@ export default function Contact() {
           </a>
         </div>
 
-        {/* TikTok */}
+        {/* TikTok poc */}
         <div className="flex items-center gap-2 group">
           <FaTiktok className="w-5 h-5 text-black transform transition-transform duration-200 group-hover:scale-110" />
           <a
