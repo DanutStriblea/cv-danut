@@ -6,10 +6,12 @@ import Education from "./components/Education";
 import Skills from "./components/Skills";
 import Projects from "./components/Projects";
 import WorkExperience from "./components/WorkExperience";
+import ZoomControls from "./components/ZoomControls";
 
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
+  const [userZoom, setUserZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const contentRef = useRef(null);
@@ -21,7 +23,7 @@ export default function App() {
 
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth <= 900;
+      const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
     };
 
@@ -107,6 +109,7 @@ export default function App() {
           }
           setFrameScale(1);
           setContentScale(1);
+          setUserZoom(1);
           document.documentElement.style.transform = "none";
           document.body.style.transform = "none";
         } catch (err) {
@@ -164,7 +167,19 @@ export default function App() {
   const compensatedWidth = frameWidth / contentScale;
   const compensatedHeight = frameHeight / contentScale;
 
-  const combinedScale = isPrinting ? 1 : frameScale;
+  const ZOOM_STEP = 0.15;
+  const handleZoomIn = () =>
+    setUserZoom((z) => {
+      const next = +(z * (1 + ZOOM_STEP)).toFixed(4);
+      return Math.min(3, next);
+    });
+  const handleZoomOut = () =>
+    setUserZoom((z) => {
+      const next = +(z / (1 + ZOOM_STEP)).toFixed(4);
+      return Math.max(0.25, next);
+    });
+
+  const combinedScale = isPrinting ? 1 : frameScale * userZoom;
 
   return (
     <div
@@ -237,6 +252,10 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {!isMobile && !isPrinting && (
+        <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
+      )}
 
       <style>{`
         @media print {
