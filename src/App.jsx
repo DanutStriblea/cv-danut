@@ -11,7 +11,7 @@ import ZoomControls from "./components/ZoomControls";
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
-  const [userZoom, setUserZoom] = useState(0.8); // start at 80%
+  const [userZoom, setUserZoom] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const contentRef = useRef(null);
@@ -100,71 +100,38 @@ export default function App() {
         });
       }
 
-      const applyPrintingClass = (on) => {
-        try {
-          if (on) {
-            document.documentElement.classList.add("printing");
-            document.body.classList.add("printing");
-            const root = document.getElementById("root");
-            if (root) root.classList.add("printing");
-          } else {
-            document.documentElement.classList.remove("printing");
-            document.body.classList.remove("printing");
-            const root = document.getElementById("root");
-            if (root) root.classList.remove("printing");
-          }
-        } catch (err) {
-          console.warn("printing class toggle failed", err);
-        }
-      };
-
       const onBeforePrint = () => {
-        // ensure printing class is applied first
-        applyPrintingClass(true);
         setIsPrinting(true);
-        setFrameScale(1);
-        setContentScale(1);
-
-        // mobile: tighter scaling so A4 fits in mobile print preview (69%)
-        if (window.innerWidth <= 768) {
-          setUserZoom(0.69);
-        } else {
+        try {
+          if (visualViewport && vvHandlerRef.current) {
+            visualViewport.removeEventListener("resize", vvHandlerRef.current);
+            visualViewport.removeEventListener("scroll", vvHandlerRef.current);
+          }
+          setFrameScale(1);
+          setContentScale(1);
           setUserZoom(1);
+          document.documentElement.style.transform = "none";
+          document.body.style.transform = "none";
+        } catch (err) {
+          console.warn("onBeforePrint cleanup failed:", err);
         }
-
-        // small delay to let the browser apply class/layout before print dialog
-        setTimeout(() => {
-          // optional: force a reflow/read to encourage layout stabilization
-          // eslint-disable-next-line no-unused-expressions
-          document.body && document.body.offsetHeight;
-        }, 40);
       };
-
       const onAfterPrint = () => {
         setIsPrinting(false);
-        applyPrintingClass(false);
+        try {
+          if (visualViewport && vvHandlerRef.current) {
+            visualViewport.addEventListener("resize", vvHandlerRef.current, {
+              passive: true,
+            });
+            visualViewport.addEventListener("scroll", vvHandlerRef.current, {
+              passive: true,
+            });
+          }
+        } catch (err) {
+          console.warn("onAfterPrint restore failed:", err);
+        }
         recomputeScales();
       };
-
-      // matchMedia print listener (named handler to avoid unused param)
-      let mql = null;
-      const handleMqlChange = (mqEvent) => {
-        if (mqEvent.matches) onBeforePrint();
-        else onAfterPrint();
-      };
-
-      try {
-        if (typeof window !== "undefined" && "matchMedia" in window) {
-          mql = window.matchMedia("print");
-          if (mql && typeof mql.addEventListener === "function") {
-            mql.addEventListener("change", handleMqlChange);
-          } else if (mql && typeof mql.addListener === "function") {
-            mql.addListener(handleMqlChange);
-          }
-        }
-      } catch (err) {
-        console.warn("matchMedia print setup failed", err);
-      }
 
       window.addEventListener("beforeprint", onBeforePrint);
       window.addEventListener("afterprint", onAfterPrint);
@@ -185,18 +152,6 @@ export default function App() {
           observer.disconnect();
           window.removeEventListener("beforeprint", onBeforePrint);
           window.removeEventListener("afterprint", onAfterPrint);
-          if (mql) {
-            try {
-              if (typeof mql.removeEventListener === "function") {
-                mql.removeEventListener("change", handleMqlChange);
-              } else if (typeof mql.removeListener === "function") {
-                mql.removeListener(handleMqlChange);
-              }
-            } catch {
-              /* ignore */
-            }
-          }
-          applyPrintingClass(false);
           window.removeEventListener("resize", checkMobile);
         } catch (err) {
           console.warn("cleanup failed in App scale effect:", err);
@@ -224,8 +179,7 @@ export default function App() {
       return Math.max(0.25, next);
     });
 
-  // If printing, use the userZoom defined for printing (mobile 0.69). Otherwise use frameScale*userZoom.
-  const combinedScale = isPrinting ? userZoom : frameScale * userZoom;
+  const combinedScale = isPrinting ? 1 : frameScale * userZoom;
 
   return (
     <div
@@ -302,6 +256,81 @@ export default function App() {
       {!isMobile && !isPrinting && (
         <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
       )}
+
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 0; }
+
+          html, body, #root {
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+            -webkit-transform: none !important;
+            transform: none !important;
+          }
+
+          .print-frame-scaler {
+            transform: none !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            display: block !important;
+            position: relative !important;
+            overflow: visible !important;
+          }
+
+          .a4-frame {
+            width: 210mm !important;
+            height: 297mm !important;
+            box-shadow: none !important;
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+
+          .a4-frame > div {
+            transform: none !important;
+            width: 210mm !important;
+            height: auto !important;
+            min-height: 297mm !important;
+            display: block !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
+
+          .px-6 { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+          .pt-4 { padding-top: 1rem !important; }
+          .pb-2 { padding-bottom: 0.5rem !important; }
+
+          .grid.grid-cols-1.md\\:grid-cols-3 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 1.5rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            padding-top: 1rem !important;
+            padding-bottom: 0.5rem !important;
+          }
+
+          .zoom-controls,
+          .vite-error-overlay,
+          .audio-enable-pill,
+          [class*="overlay"],
+          [class*="popup"],
+          [class*="modal"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+          }
+
+          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
     </div>
   );
 }
