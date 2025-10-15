@@ -122,7 +122,12 @@ export default function App() {
         setIsPrinting(true);
         setFrameScale(1);
         setContentScale(1);
-        setUserZoom(1);
+        // mobile print scaling start at 69%
+        if (isMobile) {
+          setUserZoom(0.69);
+        } else {
+          setUserZoom(1);
+        }
         setPrintingClass(true);
       };
       const onAfterPrint = () => {
@@ -131,21 +136,20 @@ export default function App() {
         recomputeScales();
       };
 
-      // modern matchMedia print listener (fallback for mobile / some browsers)
+      // matchMedia print listener (handler named to avoid unused param)
       let mql = null;
+      const handleMqlChange = (mqEvent) => {
+        if (mqEvent.matches) onBeforePrint();
+        else onAfterPrint();
+      };
+
       try {
         if (typeof window !== "undefined" && "matchMedia" in window) {
           mql = window.matchMedia("print");
           if (mql && typeof mql.addEventListener === "function") {
-            mql.addEventListener("change", (ev) => {
-              if (ev.matches) onBeforePrint();
-              else onAfterPrint();
-            });
+            mql.addEventListener("change", handleMqlChange);
           } else if (mql && typeof mql.addListener === "function") {
-            mql.addListener((ev) => {
-              if (ev.matches) onBeforePrint();
-              else onAfterPrint();
-            });
+            mql.addListener(handleMqlChange);
           }
         }
       } catch (err) {
@@ -174,11 +178,11 @@ export default function App() {
           if (mql) {
             try {
               if (typeof mql.removeEventListener === "function") {
-                mql.removeEventListener("change", onBeforePrint);
+                mql.removeEventListener("change", handleMqlChange);
               } else if (typeof mql.removeListener === "function") {
-                mql.removeListener(onBeforePrint);
+                mql.removeListener(handleMqlChange);
               }
-            } catch (e) {
+            } catch {
               /* ignore */
             }
           }
@@ -210,7 +214,8 @@ export default function App() {
       return Math.max(0.25, next);
     });
 
-  const combinedScale = isPrinting ? 1 : frameScale * userZoom;
+  // If printing, use the userZoom defined for printing (mobile 0.69). Otherwise use frameScale*userZoom.
+  const combinedScale = isPrinting ? userZoom : frameScale * userZoom;
 
   return (
     <div
