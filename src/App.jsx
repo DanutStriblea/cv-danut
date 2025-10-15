@@ -122,9 +122,9 @@ export default function App() {
         setIsPrinting(true);
         setFrameScale(1);
         setContentScale(1);
-        // mobile print scaling start at 78%
+        // mobile print scaling start at 69%
         if (isMobile) {
-          setUserZoom(0.78);
+          setUserZoom(0.69);
         } else {
           setUserZoom(1);
         }
@@ -214,7 +214,7 @@ export default function App() {
       return Math.max(0.25, next);
     });
 
-  // If printing, use the userZoom defined for printing (mobile 0.78). Otherwise use frameScale*userZoom.
+  // If printing, use the userZoom defined for printing (mobile 0.69). Otherwise use frameScale*userZoom.
   const combinedScale = isPrinting ? userZoom : frameScale * userZoom;
 
   return (
