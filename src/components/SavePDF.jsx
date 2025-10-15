@@ -15,10 +15,15 @@ export default function SavePDF({
     }
 
     try {
+      const dpr = window.devicePixelRatio || 1;
+      const scale = Math.max(1, Math.min(2, dpr));
+
       const canvas = await html2canvas(targetRef.current, {
-        scale: 2,
+        scale,
         useCORS: true,
         backgroundColor: "#ffffff",
+        logging: false,
+        scrollY: -window.scrollY,
       });
 
       const imgData = canvas.toDataURL("image/png");

@@ -1,4 +1,3 @@
-// src/components/Projects.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { FaSpotify, FaYoutube } from "react-icons/fa";
 import LogoFun from "./LogoFun";
@@ -40,7 +39,7 @@ const PROJECTS = [
     icon: <FaSpotify className="text-green-500 text-2xl" />,
     width: "w-[500px]",
     position: "left",
-    description: "Producție muzicală pe Spotify",
+    description: "Compoziții originale",
   },
   {
     name: "The Broken Vinyl",
@@ -60,7 +59,7 @@ const PROJECTS = [
     icon: <FaYoutube className="text-red-600 text-2xl" />,
     width: "w-[500px]",
     position: "left",
-    description: "Canal YouTube cu compoziții originale",
+    description: "Compoziții originale",
   },
   {
     name: (
@@ -121,32 +120,33 @@ export default function Projects() {
     timeoutRef.current = setTimeout(() => setHovered(null), 300);
   };
 
-  // Mobile: Simple links
+  // Mobile: Simple links (no arrow) — extra top spacing only for first project
   const renderMobileLink = (project, idx) => (
-    <li key={idx} className="relative">
+    <li
+      key={idx}
+      className={`relative ${idx === 0 ? "pt-4 md:pt-0" : ""}`} // pt-4 only on mobile, reset on md+
+    >
       <a
         href={project.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-200 transition-colors duration-200 group"
+        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-200 transition-colors duration-150 group"
       >
         <div className="flex-shrink-0">{project.icon}</div>
-        <div className="flex-1">
-          <div className="font-semibold text-gray-800 group-hover:text-green-600 transition-colors">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-gray-800 group-hover:text-green-600 truncate">
             {project.name}
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-gray-500 mt-0.5 truncate">
             {project.description}
           </div>
         </div>
-        <div className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
-          ↗
-        </div>
+        {/* Arrow intentionally omitted on mobile */}
       </a>
     </li>
   );
 
-  // Desktop: Popup previews
+  // Desktop: Popup previews (unchanged)
   const renderDesktopLink = (project, idx) => (
     <li
       key={idx}
@@ -183,7 +183,7 @@ export default function Projects() {
   );
 
   return (
-    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg project-blue-hover">
+    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg project-blue-hover project-mobile-restrict">
       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 rounded px-12 py-1 shadow-lg">
         <h2 className="text-lg font-semibold font-montserrat">Proiecte</h2>
       </div>
@@ -203,6 +203,63 @@ export default function Projects() {
 
       <style>{`
         .w-35 { width: 140px; }
+
+        /* Mobile-only adjustments */
+        @media (max-width: 768px) {
+          .project-mobile-restrict {
+            max-width: 420px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+            padding-top: 10px !important;
+            padding-bottom: 12px !important;
+
+            /* Match height/visual weight with Education and Skills cards */
+            min-height: 220px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+          }
+
+          /* Tighter vertical spacing between project items (mobile only) */
+          .project-mobile-restrict ul.space-y-3 {
+            gap: 4px !important;
+          }
+          .project-mobile-restrict .space-y-3 > li {
+            margin-bottom: 4px !important;
+          }
+
+          /* Reduce padding inside each project link on mobile */
+          .project-mobile-restrict .space-y-3 > li a {
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+          }
+
+          /* Reduce distance between icon and text */
+          .project-mobile-restrict .space-y-3 > li a .flex-shrink-0 {
+            margin-right: 6px !important;
+          }
+
+          /* Make logo spacing smaller */
+          .project-mobile-restrict li.flex.justify-center {
+            margin-top: 8px !important;
+          }
+
+          /* Hide heavy embedded previews on mobile */
+          .project-mobile-restrict iframe {
+            max-height: 0;
+            height: 0;
+            visibility: hidden;
+            pointer-events: none;
+          }
+
+          /* Smaller widths for popup frames on small screens if somehow visible */
+          .w-[500px] { width: 90vw !important; }
+          .w-[700px] { width: 95vw !important; }
+        }
 
         /* Efect umbră albastră doar la hover (desktop) */
         .project-blue-hover {
@@ -224,7 +281,7 @@ export default function Projects() {
           }
         }
 
-        /* Frame + content transitions - only for desktop */
+        /* Desktop popup transitions (unchanged) */
         @media (min-width: 769px) {
           .popup-frame {
             transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 360ms cubic-bezier(.2,.9,.3,1), box-shadow 360ms;
@@ -265,11 +322,6 @@ export default function Projects() {
             inset: 0;
             pointer-events: none;
           }
-        }
-
-        @media (max-width: 768px) {
-          .w-[500px] { width: 90vw; }
-          .w-[700px] { width: 95vw; }
         }
       `}</style>
     </div>

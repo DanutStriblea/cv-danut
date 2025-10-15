@@ -11,7 +11,7 @@ import ZoomControls from "./components/ZoomControls";
 export default function App() {
   const [frameScale, setFrameScale] = useState(1);
   const [contentScale, setContentScale] = useState(1);
-  const [userZoom, setUserZoom] = useState(1);
+  const [userZoom, setUserZoom] = useState(0.8); // start at 80%
   const [isMobile, setIsMobile] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const contentRef = useRef(null);
@@ -100,38 +100,57 @@ export default function App() {
         });
       }
 
+      const setPrintingClass = (on) => {
+        try {
+          if (on) {
+            document.documentElement.classList.add("printing");
+            document.body.classList.add("printing");
+            const root = document.getElementById("root");
+            if (root) root.classList.add("printing");
+          } else {
+            document.documentElement.classList.remove("printing");
+            document.body.classList.remove("printing");
+            const root = document.getElementById("root");
+            if (root) root.classList.remove("printing");
+          }
+        } catch (err) {
+          console.warn("printing class toggle failed", err);
+        }
+      };
+
       const onBeforePrint = () => {
         setIsPrinting(true);
-        try {
-          if (visualViewport && vvHandlerRef.current) {
-            visualViewport.removeEventListener("resize", vvHandlerRef.current);
-            visualViewport.removeEventListener("scroll", vvHandlerRef.current);
-          }
-          setFrameScale(1);
-          setContentScale(1);
-          setUserZoom(1);
-          document.documentElement.style.transform = "none";
-          document.body.style.transform = "none";
-        } catch (err) {
-          console.warn("onBeforePrint cleanup failed:", err);
-        }
+        setFrameScale(1);
+        setContentScale(1);
+        setUserZoom(1);
+        setPrintingClass(true);
       };
       const onAfterPrint = () => {
         setIsPrinting(false);
-        try {
-          if (visualViewport && vvHandlerRef.current) {
-            visualViewport.addEventListener("resize", vvHandlerRef.current, {
-              passive: true,
-            });
-            visualViewport.addEventListener("scroll", vvHandlerRef.current, {
-              passive: true,
-            });
-          }
-        } catch (err) {
-          console.warn("onAfterPrint restore failed:", err);
-        }
+        setPrintingClass(false);
         recomputeScales();
       };
+
+      // modern matchMedia print listener (fallback for mobile / some browsers)
+      let mql = null;
+      try {
+        if (typeof window !== "undefined" && "matchMedia" in window) {
+          mql = window.matchMedia("print");
+          if (mql && typeof mql.addEventListener === "function") {
+            mql.addEventListener("change", (ev) => {
+              if (ev.matches) onBeforePrint();
+              else onAfterPrint();
+            });
+          } else if (mql && typeof mql.addListener === "function") {
+            mql.addListener((ev) => {
+              if (ev.matches) onBeforePrint();
+              else onAfterPrint();
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("matchMedia print setup failed", err);
+      }
 
       window.addEventListener("beforeprint", onBeforePrint);
       window.addEventListener("afterprint", onAfterPrint);
@@ -152,6 +171,18 @@ export default function App() {
           observer.disconnect();
           window.removeEventListener("beforeprint", onBeforePrint);
           window.removeEventListener("afterprint", onAfterPrint);
+          if (mql) {
+            try {
+              if (typeof mql.removeEventListener === "function") {
+                mql.removeEventListener("change", onBeforePrint);
+              } else if (typeof mql.removeListener === "function") {
+                mql.removeListener(onBeforePrint);
+              }
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          setPrintingClass(false);
           window.removeEventListener("resize", checkMobile);
         } catch (err) {
           console.warn("cleanup failed in App scale effect:", err);
@@ -329,6 +360,43 @@ export default function App() {
           }
 
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+        /* Force consistent A4 layout for mobile print previews when printing class is present */
+        body.printing .print-frame-scaler,
+        body.printing .a4-frame,
+        body.printing .a4-frame > div,
+        body.printing html,
+        body.printing body,
+        body.printing #root {
+          width: 210mm !important;
+          height: 297mm !important;
+          transform: none !important;
+          -webkit-transform: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: visible !important;
+          box-sizing: border-box !important;
+          background: white !important;
+        }
+
+        body.printing .zoom-controls,
+        body.printing .zoom-controls-outside,
+        body.printing .vite-error-overlay,
+        body.printing .audio-enable-pill,
+        body.printing [class*="overlay"],
+        body.printing [class*="popup"],
+        body.printing [class*="modal"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+        }
+
+        body.printing .print-frame-scaler {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          display: block !important;
         }
       `}</style>
     </div>
