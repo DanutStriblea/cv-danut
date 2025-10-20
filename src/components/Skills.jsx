@@ -1,4 +1,3 @@
-// src/components/Skills.jsx
 import React, { useEffect, useRef } from "react";
 import skillSoundMp3 from "../assets/SkillSound.mp3";
 
@@ -236,74 +235,22 @@ export default function Skills() {
 
   return (
     <div
-      className="flex-1 relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg skill-blue-hover card-print-fix"
+      className="flex-1 relative bg-slate-100 rounded-lg p-4 pt-10 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-blue-500/10 card-print-fix"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Titlu centrat corect pentru ambele moduri */}
-      <div className="card-title-wrapper">
+      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10">
         <h2 className="text-lg font-semibold font-montserrat">Abilități</h2>
       </div>
 
-      {/* Conținutul cardului */}
-      <ul className="text-gray-600 text-xs space-y-1.5 -mx-1">
-        <div className="h-1" />
+      <ul className="text-gray-600 text-xs space-y-1 px-2">
+        <div className="h-0.5" />
         {SKILLS.map((skill) => (
-          <li key={skill}>• {skill}</li>
+          <li key={skill} className="leading-tight text-[11px]">
+            • {skill}
+          </li>
         ))}
       </ul>
-
-      <style>{`
-        .skill-blue-hover {
-          transition: box-shadow 220ms ease;
-        }
-
-        @media (hover: hover) and (pointer: fine) {
-          .skill-blue-hover:hover {
-            box-shadow:
-              var(--tw-shadow),
-              0 6px 20px rgba(67, 108, 197, 0.13),
-              0 2px 6px rgba(6,182,212,0.08);
-          }
-        }
-
-        @media (hover: none) and (pointer: coarse) {
-          .skill-blue-hover {
-            box-shadow: var(--tw-shadow);
-          }
-        }
-
-        /* SOLUȚIE NOUĂ: Titluri centrate perfect pentru ambele moduri */
-        .card-title-wrapper {
-          position: absolute;
-          top: -0.75rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #cbd5e1;
-          padding: 0.25rem 3rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          z-index: 10;
-        }
-
-        /* Asigură că în print se comportă la fel */
-        @media print {
-          .card-title-wrapper {
-            position: absolute;
-            top: -0.75rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #cbd5e1 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .card-print-fix {
-            padding-top: 2rem !important;
-            position: relative !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

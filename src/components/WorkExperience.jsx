@@ -451,16 +451,6 @@ export default function WorkExperience() {
       </div>
       {/* Additional space at the bottom of the entire section */}
       <div className="h-6"></div>
-      <style>{`
-        @media (hover: hover) and (pointer: fine) {
-          .card-hover-blue {
-            transition: box-shadow 0.3s ease-in-out;
-          }
-          .card-hover-blue:hover {
-            box-shadow: 0 0 10px rgba(37, 85, 189, 0.308);
-          }
-        }
-      `}</style>
     </section>
   );
 }

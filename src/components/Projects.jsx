@@ -71,12 +71,12 @@ const PROJECTS = [
     url: "https://dan-store-lyart.vercel.app/#/",
     embed: (
       <div
-        className="relative w-full overflow-hidden popup-inner-wrapper"
+        className="relative w-full overflow-hidden"
         style={{ paddingTop: "85%" }}
       >
         <iframe
           src="https://dan-store-lyart.vercel.app/#/"
-          className="absolute top-0 left-0 w-full h-full scale-98 popup-iframe"
+          className="absolute top-0 left-0 w-full h-full scale-98"
           style={{ transformOrigin: "top center" }}
           title="DanStore Preview"
         />
@@ -109,44 +109,38 @@ export default function Projects() {
   }, []);
 
   const handleEnter = (idx) => {
-    if (isMobile) return; // Ignore hover on mobile
+    if (isMobile) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setHovered(idx);
   };
 
   const handleLeave = () => {
-    if (isMobile) return; // Ignore hover on mobile
+    if (isMobile) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => setHovered(null), 300);
   };
 
-  // Mobile: Simple links (no arrow) — extra top spacing only for first project
   const renderMobileLink = (project, idx) => (
-    <li
-      key={idx}
-      className={`relative ${idx === 0 ? "pt-4 md:pt-0" : ""}`} // pt-4 only on mobile, reset on md+
-    >
+    <li key={idx} className={`relative ${idx === 0 ? "pt-4 md:pt-0" : ""}`}>
       <a
         href={project.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-200 transition-colors duration-150 group"
+        className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-200 transition-colors duration-150 group"
       >
         <div className="flex-shrink-0">{project.icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-800 group-hover:text-green-600 truncate">
+          <div className="font-semibold text-gray-800 group-hover:text-green-600 truncate text-[13px] leading-tight">
             {project.name}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5 truncate">
+          <div className="text-xs text-gray-500 mt-1 truncate text-[11px] leading-tight">
             {project.description}
           </div>
         </div>
-        {/* Arrow intentionally omitted on mobile */}
       </a>
     </li>
   );
 
-  // Desktop: Popup previews (unchanged)
   const renderDesktopLink = (project, idx) => (
     <li
       key={idx}
@@ -158,7 +152,7 @@ export default function Projects() {
         href={project.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 font-semibold hover:text-green-600"
+        className="flex items-center gap-3 font-semibold hover:text-green-600 text-[13px] p-1"
       >
         {project.icon}
         {project.name}
@@ -168,194 +162,41 @@ export default function Projects() {
         aria-hidden={hovered !== idx}
         className={`absolute z-10 ${
           project.width
-        } bg-white rounded-lg overflow-hidden
-        ${project.position === "left" ? "top-0 right-full mr-1" : ""}
-        ${project.position === "right" ? "top-0 left-full ml-1" : ""}
-        ${project.position === "bottom-right" ? "top-full mt-2 right-0" : ""}
-        ${project.position === undefined ? "top-full mt-2" : ""}
-        popup-frame
-        ${hovered === idx ? "popup-visible" : "popup-hidden"}`}
+        } bg-white rounded-lg overflow-hidden transition-all duration-360 ease-cubic-bezier opacity-0 translate-y-1.5 scale-98 pointer-events-none shadow-lg
+        ${project.position === "left" ? "top-0 right-full mr-2" : ""}
+        ${project.position === "right" ? "top-0 left-full ml-2" : ""}
+        ${project.position === "bottom-right" ? "top-full mt-3 right-0" : ""}
+        ${
+          hovered === idx
+            ? "opacity-100 translate-y-0 scale-100 pointer-events-auto shadow-xl"
+            : ""
+        }`}
       >
-        <div className="popup-frame-shadow" />
-        <div className="popup-content">{project.embed}</div>
+        <div className="popup-content transition-all duration-320 ease-cubic-bezier delay-80 opacity-0 translate-y-1.5 scale-995">
+          {project.embed}
+        </div>
       </div>
     </li>
   );
 
   return (
-    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg project-blue-hover project-mobile-restrict card-print-fix">
-      {/* Titlu centrat corect pentru ambele moduri */}
-      <div className="card-title-wrapper">
+    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-blue-500/10 project-mobile-restrict card-print-fix">
+      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10">
         <h2 className="text-lg font-semibold font-montserrat">Proiecte</h2>
       </div>
 
-      <ul className="space-y-3 text-sm text-gray-700">
-        <div className="h-1" />
+      <ul className="space-y-1 text-sm text-gray-700 px-1">
+        <div className="h-2" />
         {PROJECTS.map((project, idx) =>
           isMobile
             ? renderMobileLink(project, idx)
             : renderDesktopLink(project, idx)
         )}
 
-        <li className="flex justify-center mt-6 relative">
-          <LogoFun className="w-35" noteContainerClass="" />
+        <li className="flex justify-center mt-2 mb-2 relative">
+          <LogoFun className="w-30" noteContainerClass="" />
         </li>
       </ul>
-
-      <style>{`
-        .w-35 { width: 140px; }
-
-        /* Mobile-only adjustments */
-        @media (max-width: 768px) {
-          .project-mobile-restrict {
-            max-width: 420px !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            padding-left: 12px !important;
-            padding-right: 12px !important;
-            padding-top: 10px !important;
-            padding-bottom: 12px !important;
-
-            /* Match height/visual weight with Education and Skills cards */
-            min-height: 220px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: flex-start !important;
-          }
-
-          /* Tighter vertical spacing between project items (mobile only) */
-          .project-mobile-restrict ul.space-y-3 {
-            gap: 4px !important;
-          }
-          .project-mobile-restrict .space-y-3 > li {
-            margin-bottom: 4px !important;
-          }
-
-          /* Reduce padding inside each project link on mobile */
-          .project-mobile-restrict .space-y-3 > li a {
-            padding-top: 6px !important;
-            padding-bottom: 6px !important;
-            padding-left: 8px !important;
-            padding-right: 8px !important;
-          }
-
-          /* Reduce distance between icon and text */
-          .project-mobile-restrict .space-y-3 > li a .flex-shrink-0 {
-            margin-right: 6px !important;
-          }
-
-          /* Make logo spacing smaller */
-          .project-mobile-restrict li.flex.justify-center {
-            margin-top: 8px !important;
-          }
-
-          /* Hide heavy embedded previews on mobile */
-          .project-mobile-restrict iframe {
-            max-height: 0;
-            height: 0;
-            visibility: hidden;
-            pointer-events: none;
-          }
-
-          /* Smaller widths for popup frames on small screens if somehow visible */
-          .w-[500px] { width: 90vw !important; }
-          .w-[700px] { width: 95vw !important; }
-        }
-
-        /* Efect umbră albastră doar la hover (desktop) */
-        .project-blue-hover {
-          transition: box-shadow 220ms ease;
-        }
-
-        @media (hover: hover) and (pointer: fine) {
-          .project-blue-hover:hover {
-            box-shadow:
-              var(--tw-shadow),
-              0 6px 20px rgba(67, 108, 197, 0.13),
-              0 2px 6px rgba(6,182,212,0.08);
-          }
-        }
-
-        @media (hover: none) and (pointer: coarse) {
-          .project-blue-hover {
-            box-shadow: var(--tw-shadow);
-          }
-        }
-
-        /* SOLUȚIE NOUĂ: Titluri centrate perfect pentru ambele moduri */
-        .card-title-wrapper {
-          position: absolute;
-          top: -0.75rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #cbd5e1;
-          padding: 0.25rem 3rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          z-index: 10;
-        }
-
-        /* Asigură că în print se comportă la fel */
-        @media print {
-          .card-title-wrapper {
-            position: absolute;
-            top: -0.75rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #cbd5e1 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .card-print-fix {
-            padding-top: 2rem !important;
-            position: relative !important;
-          }
-        }
-
-        /* Desktop popup transitions (unchanged) */
-        @media (min-width: 769px) {
-          .popup-frame {
-            transition: opacity 360ms cubic-bezier(.2,.9,.3,1), transform 360ms cubic-bezier(.2,.9,.3,1), box-shadow 360ms;
-            transform-origin: top center;
-            opacity: 0;
-            transform: translateY(6px) scale(0.98);
-            pointer-events: none;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-            border-radius: 10px;
-          }
-
-          .popup-visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: auto;
-            box-shadow: 0 14px 40px rgba(2,6,23,0.12);
-          }
-
-          .popup-hidden {
-            opacity: 0;
-            transform: translateY(6px) scale(0.98);
-            pointer-events: none;
-          }
-
-          .popup-content {
-            transition: opacity 320ms cubic-bezier(.2,.9,.3,1) 80ms, transform 320ms cubic-bezier(.2,.9,.3,1) 80ms;
-            opacity: 0;
-            transform: translateY(6px) scale(0.995);
-          }
-
-          .popup-visible .popup-content {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-
-          .popup-frame-shadow {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-          }
-        }
-      `}</style>
     </div>
   );
 }

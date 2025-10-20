@@ -64,7 +64,7 @@ export default function SavePDF({
   return (
     <button
       onClick={handleSavePDF}
-      className={`absolute top-6 left-6 flex items-center gap-2 text-white hover:scale-110 transition-transform duration-200 group print:hidden ${className}`}
+      className={`absolute top-6 left-6 flex items-center gap-2 text-white hover:scale-110 transition-transform duration-200 group print-hidden ${className}`}
     >
       <Download className="text-2xl" />
       <span className="opacity-0 group-hover:opacity-100 text-sm ml-2 transition-opacity duration-200">

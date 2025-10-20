@@ -3,12 +3,6 @@
 html,
 body,
 #root {
-  touch-action: auto;
-  -ms-touch-action: auto;
-  overscroll-behavior: auto;
-  -webkit-text-size-adjust: 100%;
-  -ms-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -39,68 +33,29 @@ body,
   }
 }
 
-.print-frame-scaler {
-  display: inline-block;
-  box-sizing: border-box;
-  transform-origin: top center;
-}
-
-/* Keep a4 frame defaults (desktop) */
+/* A4 frame styling - SIMPLIFIED */
 .a4-frame {
-  position: relative;
-  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
   background: white;
-  width: 794px;
-  min-height: 1123px;
   margin: 0 auto;
-  overflow: hidden;
 }
 
-/* Mobile only (phones ≤768px) */
+/* Mobile responsive */
 @media screen and (max-width: 768px) {
-  .print-frame-scaler {
-    transform: none !important;
-    width: 100% !important;
-    max-width: 794px !important;
-    margin: 0 auto !important;
-  }
-
   .a4-frame {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 1123px !important;
-    transform: none !important;
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    box-shadow: none;
   }
 
   body {
-    overflow-x: auto !important;
-  }
-
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-
-  .grid.grid-cols-3 {
-    grid-template-columns: 1fr !important;
+    background: white;
   }
 }
 
-/* Tablet and Desktop */
-@media screen and (min-width: 769px) {
-  .print-frame-scaler {
-    transform: scale(var(--scale, 1)) !important;
-    transform-origin: top center !important;
-  }
-
-  .a4-frame {
-    width: 794px;
-    min-height: 1123px;
-  }
-}
-
-/* FIXED PRINT STYLES - COMPLETE SOLUTION */
+/* Print styles - SIMPLIFIED */
 @media print {
   @page {
     size: A4;
@@ -110,35 +65,6 @@ body,
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-  }
-
-  /* Ascunde elementele UI */
-  .zoom-controls,
-  .vite-error-overlay,
-  .audio-enable-pill,
-  [class*="overlay"],
-  [class*="popup"],
-  [class*="modal"],
-  button,
-  input,
-  select,
-  textarea,
-  iframe,
-  .popup-frame,
-  .popup-content,
-  .popup-visible,
-  .popup-hidden,
-  [class*="spotify"],
-  [class*="youtube"],
-  [class*="embed"],
-  header button {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    position: absolute !important;
-    left: -9999px !important;
   }
 
   html,
@@ -151,97 +77,240 @@ body,
     background: white !important;
   }
 
-  .print-frame-scaler,
   .a4-frame {
-    transform: none !important;
     width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 auto !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
     box-shadow: none !important;
+    page-break-after: always;
   }
 
-  /* Grid-ul cu 3 coloane */
+  /* Hide interactive elements */
+  button,
+  iframe,
+  .popup-frame,
+  .popup-content,
+  [class*="spotify"],
+  [class*="youtube"],
+  [class*="embed"],
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Ensure proper spacing in print */
   .px-6.pt-4.pb-2.grid {
     display: grid !important;
     grid-template-columns: 1fr 1fr 1fr !important;
-    grid-template-rows: auto !important;
     gap: 12px !important;
-    width: 100% !important;
-    padding-left: 24px !important;
-    padding-right: 24px !important;
-    padding-top: 16px !important;
-    padding-bottom: 8px !important;
+    padding: 16px 24px 8px 24px !important;
   }
 
-  /* Cardurile în grid */
-  .px-6.pt-4.pb-2.grid > * {
-    width: 100% !important;
-    min-height: 200px !important;
-    break-inside: avoid !important;
-  }
-
-  /* REPARĂ TITLURILE - transformă absolute în relative */
-  .absolute {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-  }
-
-  /* Titlurile cardurilor (Educațieee, Abilități, Proiecte) */
-  .absolute.-top-2,
-  .absolute.-top-3 {
-    position: relative !important;
-    top: 0 !important;
-    left: 0 !important;
-    transform: none !important;
-    margin-bottom: 0.5rem !important;
-    display: block !important;
-    width: 100% !important;
-    text-align: center !important;
-  }
-
-  /* Background pentru titluri */
-  .bg-slate-300 {
+  /* CARD TITLES - PERFECT CENTERING IN PRINT */
+  .card-title-wrapper {
+    position: absolute !important;
+    top: -12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     background: #cbd5e1 !important;
+    padding: 6px 32px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    text-align: center !important;
+    min-width: 120px !important;
+    white-space: nowrap !important;
   }
 
-  /* Padding pentru carduri cu titluri reparate */
-  .bg-slate-100.rounded-lg.p-6.pt-10 {
-    padding-top: 1rem !important;
+  .card-title-wrapper h2 {
+    text-align: center !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    display: block !important;
+    line-height: 1.2 !important;
+  }
+  @import "tailwindcss";
+
+  html,
+  body,
+  #root {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f6fa;
   }
 
-  .bg-slate-100.rounded-lg.p-6.pt-10.pb-2 {
-    padding-top: 1rem !important;
-    padding-bottom: 0.5rem !important;
+  /* Notes animation */
+  .note {
+    animation: noteRise 2000ms linear forwards;
+    opacity: 0.95;
+    will-change: transform, opacity;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
   }
 
-  /* Ascunde specific iframe-urile din Projects */
-  .projects-component iframe,
-  .projects-component .popup-frame,
-  .projects-component .popup-content {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
+  @keyframes noteRise {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+      opacity: 1;
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-120px) translateX(var(--sway, 0px)) rotate(15deg)
+        scale(1.05);
+      opacity: 0;
+    }
   }
 
-  /* Ascunde orice element cu absolute positioning care ar putea acoperi conținutul */
-  [style*="position: absolute"],
-  [style*="position:fixed"],
-  .absolute,
-  .fixed {
+  /* A4 frame styling - SIMPLIFIED */
+  .a4-frame {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    margin: 0 auto;
+  }
+
+  /* Mobile responsive */
+  @media screen and (max-width: 768px) {
+    .a4-frame {
+      width: 100%;
+      min-height: auto;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    body {
+      background: white;
+    }
+  }
+
+  /* Print styles - SIMPLIFIED */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    html,
+    body,
+    #root {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      background: white !important;
+    }
+
+    .a4-frame {
+      width: 210mm !important;
+      min-height: 297mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      page-break-after: always;
+    }
+
+    /* Hide interactive elements */
+    button,
+    iframe,
+    .popup-frame,
+    .popup-content,
+    [class*="spotify"],
+    [class*="youtube"],
+    [class*="embed"],
+    .print-hidden {
+      display: none !important;
+    }
+
+    /* Ensure proper spacing in print */
+    .px-6.pt-4.pb-2.grid {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 12px !important;
+      padding: 16px 24px 8px 24px !important;
+    }
+
+    /* CARD TITLES - FORCE ABSOLUTE CENTERING */
+    .card-title-wrapper {
+      position: absolute !important;
+      top: -12px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      background: #cbd5e1 !important;
+      padding: 8px 40px !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+      text-align: center !important;
+      min-width: 140px !important;
+      white-space: nowrap !important;
+      margin: 0 !important;
+    }
+
+    /* FORCE ALL H2 ELEMENTS IN CARD TITLES TO BE CENTERED */
+    .card-title-wrapper h2 {
+      text-align: center !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      font-size: 18px !important;
+      font-weight: 700 !important;
+      width: 100% !important;
+      display: block !important;
+      line-height: 1.2 !important;
+      text-align: center !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+
+    /* OVERRIDE ANY TAILWIND TEXT-ALIGNMENT FOR CARD TITLES */
+    .bg-slate-100.rounded-lg .card-title-wrapper,
+    .bg-slate-100.rounded-lg .card-title-wrapper h2 {
+      text-align: center !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+
+    /* Card spacing in print */
+    .bg-slate-100.rounded-lg {
+      break-inside: avoid;
+      min-height: 200px;
+      position: relative !important;
+    }
+
+    /* Force ALL headings to be centered in print */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      text-align: center !important;
+    }
+
+    /* Specifically target card titles */
+    .education-title,
+    .skills-title,
+    .projects-title {
+      text-align: center !important;
+      margin: 0 auto !important;
+    }
+  }
+  /* Card spacing in print */
+  .bg-slate-100.rounded-lg {
+    break-inside: avoid;
+    min-height: 200px;
     position: relative !important;
-    left: auto !important;
-    top: auto !important;
   }
 
-  /* Asigură că toate link-urile sunt vizibile (doar textul) */
-  a {
-    color: #000 !important;
-    text-decoration: none !important;
+  /* Keep section titles centered in print */
+  h2.text-center,
+  h3.text-center {
+    text-align: center !important;
   }
 }

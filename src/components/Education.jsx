@@ -1,4 +1,3 @@
-// src/components/Education.jsx
 import React, { useEffect, useRef } from "react";
 import bookPagesMp3 from "../assets/BookPages.mp3";
 
@@ -248,79 +247,27 @@ export default function Education() {
 
   return (
     <div
-      className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg edu-cyan-hover card-print-fix"
+      className="flex-1 w-full relative bg-slate-100 rounded-lg p-4 pt-10 pb-0 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-cyan-500/10 card-print-fix"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Titlu centrat corect pentru ambele moduri */}
-      <div className="card-title-wrapper">
-        <h2 className="text-lg font-semibold font-montserrat">Educație</h2>
+      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10">
+        <h2 className="text-lg font-semibold font-montserrat text-center print:text-center">
+          Educație
+        </h2>
       </div>
 
-      {/* Conținutul cardului */}
-      <ul className="space-y-3 text-xs text-center text-gray-500">
-        {EDUCATION.map(({ years, degree, institution, details }) => (
-          <li key={degree} className="space-y-0.3">
-            <p className="text-center font-semibold text-gray-400">{years}</p>
-            <p className="font-bold">{degree}</p>
-            <p className="italic">{institution}</p>
-            <p className="text-gray-400">{details}</p>
+      <ul className="space-y-2 text-xs text-center text-gray-500">
+        {EDUCATION.map(({ years, degree, institution }) => (
+          <li key={degree} className="space-y-0.5">
+            <p className="text-center font-semibold text-gray-400 text-[11px] leading-tight">
+              {years}
+            </p>
+            <p className="font-bold text-[11px] leading-tight">{degree}</p>
+            <p className="italic text-[11px] leading-tight">{institution}</p>
           </li>
         ))}
       </ul>
-
-      <style>{`
-        /* Stiluri existente */
-        .edu-cyan-hover {
-          transition: box-shadow 220ms ease;
-        }
-
-        @media (hover: hover) and (pointer: fine) {
-          .edu-cyan-hover:hover {
-            box-shadow:
-              var(--tw-shadow),
-              0 6px 20px rgba(67, 108, 197, 0.13),
-              0 2px 6px rgba(6,182,212,0.08);
-          }
-        }
-
-        @media (hover: none) and (pointer: coarse) {
-          .edu-cyan-hover {
-            box-shadow: var(--tw-shadow);
-          }
-        }
-
-        /* SOLUȚIE NOUĂ: Titluri centrate perfect pentru ambele moduri */
-        .card-title-wrapper {
-          position: absolute;
-          top: -0.75rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #cbd5e1;
-          padding: 0.25rem 3rem;
-          border-radius: 0.375rem;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          z-index: 10;
-        }
-
-        /* Asigură că în print se comportă la fel */
-        @media print {
-          .card-title-wrapper {
-            position: absolute;
-            top: -0.75rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #cbd5e1 !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          .card-print-fix {
-            padding-top: 2rem !important;
-            position: relative !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
