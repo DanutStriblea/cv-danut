@@ -254,7 +254,7 @@ export default function Education() {
     >
       {/* Titlu „lipit” */}
       <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg">
-        <h2 className="text-lg font-semibold font-montserrat">Educație</h2>
+        <h2 className="text-lg font-semibold font-montserrat">Educațieee</h2>
       </div>
 
       {/* Conținutul cardului */}
