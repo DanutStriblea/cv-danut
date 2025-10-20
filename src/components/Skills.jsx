@@ -236,12 +236,12 @@ export default function Skills() {
 
   return (
     <div
-      className="flex-1 relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg skill-blue-hover"
+      className="flex-1 relative bg-slate-100 rounded-lg p-6 pt-10 shadow-lg skill-blue-hover card-print-fix"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Titlu „lipit” */}
-      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 rounded px-12 py-1 shadow-lg">
+      {/* Titlu centrat corect pentru ambele moduri */}
+      <div className="card-title-wrapper">
         <h2 className="text-lg font-semibold font-montserrat">Abilități</h2>
       </div>
 
@@ -258,7 +258,6 @@ export default function Skills() {
           transition: box-shadow 220ms ease;
         }
 
-        /* doar la hover (pe desktop) */
         @media (hover: hover) and (pointer: fine) {
           .skill-blue-hover:hover {
             box-shadow:
@@ -268,10 +267,40 @@ export default function Skills() {
           }
         }
 
-        /* pe touch rămâne doar umbra implicită Tailwind */
         @media (hover: none) and (pointer: coarse) {
           .skill-blue-hover {
             box-shadow: var(--tw-shadow);
+          }
+        }
+
+        /* SOLUȚIE NOUĂ: Titluri centrate perfect pentru ambele moduri */
+        .card-title-wrapper {
+          position: absolute;
+          top: -0.75rem;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #cbd5e1;
+          padding: 0.25rem 3rem;
+          border-radius: 0.375rem;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          z-index: 10;
+        }
+
+        /* Asigură că în print se comportă la fel */
+        @media print {
+          .card-title-wrapper {
+            position: absolute;
+            top: -0.75rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #cbd5e1 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          .card-print-fix {
+            padding-top: 2rem !important;
+            position: relative !important;
           }
         }
       `}</style>
