@@ -93,6 +93,7 @@ export default function Projects() {
   const [hovered, setHovered] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const timeoutRef = useRef(null);
+  const popupRefs = useRef([]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -116,8 +117,9 @@ export default function Projects() {
 
   const handleLeave = () => {
     if (isMobile) return;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setHovered(null), 300);
+    timeoutRef.current = setTimeout(() => {
+      setHovered(null);
+    }, 300);
   };
 
   const renderMobileLink = (project, idx) => (
@@ -159,30 +161,32 @@ export default function Projects() {
       </a>
 
       <div
-        aria-hidden={hovered !== idx}
-        className={`absolute z-10 ${
+        ref={(el) => (popupRefs.current[idx] = el)}
+        onMouseEnter={() => handleEnter(idx)}
+        onMouseLeave={handleLeave}
+        className={`absolute z-50 ${
           project.width
-        } bg-white rounded-lg overflow-hidden transition-all duration-360 ease-cubic-bezier opacity-0 translate-y-1.5 scale-98 pointer-events-none shadow-lg
-        ${project.position === "left" ? "top-0 right-full mr-2" : ""}
-        ${project.position === "right" ? "top-0 left-full ml-2" : ""}
-        ${project.position === "bottom-right" ? "top-full mt-3 right-0" : ""}
-        ${
-          hovered === idx
-            ? "opacity-100 translate-y-0 scale-100 pointer-events-auto shadow-xl"
-            : ""
-        }`}
+        } bg-white rounded-lg overflow-hidden transition-all duration-300 ease-out border border-gray-200 shadow-2xl
+          ${project.position === "left" ? "top-0 right-full mr-3" : ""}
+          ${project.position === "right" ? "top-0 left-full ml-3" : ""}
+          ${project.position === "bottom-right" ? "top-full mt-3 right-0" : ""}
+          ${
+            hovered === idx
+              ? "opacity-100 visible translate-y-0 scale-100"
+              : "opacity-0 invisible translate-y-2 scale-95"
+          }`}
       >
-        <div className="popup-content transition-all duration-320 ease-cubic-bezier delay-80 opacity-0 translate-y-1.5 scale-995">
-          {project.embed}
-        </div>
+        <div className="popup-content w-full h-full">{project.embed}</div>
       </div>
     </li>
   );
 
   return (
     <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-blue-500/10 project-mobile-restrict card-print-fix">
-      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10">
-        <h2 className="text-lg font-semibold font-montserrat">Proiecte</h2>
+      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10 print:!left-1/2 print:!transform print:!-translate-x-1/2">
+        <h2 className="text-lg font-semibold font-montserrat text-center print:!text-center print:!block print:!mx-auto">
+          Proiecte
+        </h2>
       </div>
 
       <ul className="space-y-1 text-sm text-gray-700 px-1">

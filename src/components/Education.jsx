@@ -251,8 +251,8 @@ export default function Education() {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10">
-        <h2 className="text-lg font-semibold font-montserrat text-center print:text-center">
+      <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10 print:!left-1/2 print:!transform print:!-translate-x-1/2">
+        <h2 className="text-lg font-semibold font-montserrat text-center print:!text-center print:!block print:!mx-auto">
           Educație
         </h2>
       </div>
