@@ -182,23 +182,36 @@ export default function Projects() {
   );
 
   return (
-    <div className="flex-1 w-full relative bg-slate-100 rounded-lg p-6 pt-10 pb-2 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-blue-500/10 project-mobile-restrict card-print-fix">
+    <div
+      className="
+      flex-1 w-full relative bg-slate-100 rounded-lg
+      p-3 sm:p-6 pt-6 sm:pt-10 pb-1 sm:pb-2
+      shadow-lg transition-shadow duration-220
+      hover:shadow-xl hover:shadow-blue-500/10
+      project-mobile-restrict card-print-fix
+    "
+    >
       <div className="card-title-wrapper absolute -top-3 left-1/2 transform -translate-x-1/2 bg-slate-300 px-12 py-1 rounded shadow-lg z-10 print:!left-1/2 print:!transform print:!-translate-x-1/2">
         <h2 className="text-lg font-semibold font-montserrat text-center print:!text-center print:!block print:!mx-auto">
           Proiecte
         </h2>
       </div>
 
-      <ul className="space-y-1 text-sm text-gray-700 px-1">
-        <div className="h-2" />
+      <ul
+        className="
+        space-y-0.5 sm:space-y-1 text-sm text-gray-700
+        px-0 sm:px-1
+      "
+      >
+        <div className="h-1 sm:h-2" />
         {PROJECTS.map((project, idx) =>
           isMobile
             ? renderMobileLink(project, idx)
             : renderDesktopLink(project, idx)
         )}
 
-        <li className="flex justify-center mt-2 mb-2 relative">
-          <LogoFun className="w-30" noteContainerClass="" />
+        <li className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-2 relative">
+          <LogoFun className="w-24 sm:w-30" noteContainerClass="" />
         </li>
       </ul>
     </div>

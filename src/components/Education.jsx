@@ -264,7 +264,12 @@ export default function Education() {
               {years}
             </p>
             <p className="font-bold text-[11px] leading-tight">{degree}</p>
-            <p className="italic text-[11px] leading-tight">{institution}</p>
+            <p
+              className="italic text-[11px] leading-tight mb-0 sm:mb-0 last:mb-0 
+  [&:nth-last-child(1)]:mb-4 sm:[&:nth-last-child(1)]:mb-0"
+            >
+              {institution}
+            </p>
           </li>
         ))}
       </ul>
