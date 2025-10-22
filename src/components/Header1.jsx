@@ -1,18 +1,10 @@
 import { FiPrinter } from "react-icons/fi";
-import { Download } from "lucide-react";
+import SavePDF from "./SavePDF";
 
 export default function Header1() {
   return (
     <header className="relative w-full bg-gray-900 text-white p-6 text-center">
-      <button
-        className="absolute top-6 left-6 flex items-center gap-2 text-white 
-                   hover:scale-110 transition-transform duration-200 group print-hidden"
-      >
-        <Download className="text-2xl" />
-        <span className="opacity-0 group-hover:opacity-100 text-sm transition-opacity duration-200">
-          Download this CV
-        </span>
-      </button>
+      <SavePDF />
 
       <button
         onClick={() => window.print()}
@@ -20,7 +12,7 @@ export default function Header1() {
                    hover:scale-110 transition-transform duration-200 group print-hidden"
       >
         <span className="opacity-0 group-hover:opacity-100 text-sm transition-opacity duration-200">
-          Print this page
+          Print
         </span>
         <FiPrinter className="text-2xl" />
       </button>

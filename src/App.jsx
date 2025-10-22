@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Header1 from "./components/Header1";
 import Contact from "./components/Contact";
 import Profile from "./components/Profile";
@@ -9,6 +9,7 @@ import WorkExperience from "./components/WorkExperience";
 
 export default function App() {
   const [_isPrinting, setIsPrinting] = useState(false);
+  const cvRef = useRef(null);
 
   useEffect(() => {
     const onBeforePrint = () => {
@@ -30,8 +31,11 @@ export default function App() {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-stone-300 via-stone-400 to-stone-500 print:bg-white print:min-h-0 print:block">
-      <div className="a4-frame bg-white shadow-2xl print:shadow-none overflow-hidden">
-        <Header1 />
+      <div
+        ref={cvRef}
+        className="a4-frame bg-white shadow-2xl print:shadow-none overflow-hidden"
+      >
+        <Header1 cvRef={cvRef} />
         <Contact />
         <Profile />
 
