@@ -1,75 +1,87 @@
 import React from "react";
 import { Download } from "lucide-react";
+import { jsPDF } from "jspdf";
+import * as htmlToImage from "html-to-image";
 
 export default function SavePDF({ className = "" }) {
   const handleSavePDF = async () => {
     try {
-      // Încarcă librăria dinamic
-      const { jsPDF } = await import("jspdf");
-
-      // Folosim html2canvas dintr-un CDN care să nu aibă problema cu oklch
-      const html2canvasResponse = await fetch(
-        "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-      );
-      const html2canvasScript = await html2canvasResponse.text();
-
-      // Execută script-ul
-      eval(html2canvasScript);
-
       const element = document.querySelector(".a4-frame");
-
       if (!element) {
-        alert("Nu s-a putut găsi conținutul CV-ului");
+        alert("Nu s-a găsit conținutul CV-ului");
         return;
       }
 
       const originalCursor = document.body.style.cursor;
       document.body.style.cursor = "wait";
 
-      // Ascunde butoanele temporar
-      const elementsToHide = document.querySelectorAll(".print-hidden");
-      elementsToHide.forEach((el) => {
-        el.style.visibility = "hidden";
+      // Ascunde butoanele interactive
+      const hiddenEls = document.querySelectorAll(".print-hidden");
+      hiddenEls.forEach((el) => (el.style.visibility = "hidden"));
+
+      // Așteaptă fonturile
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      // --- CONVERSIE GLOBALĂ OKLCH -> RGB ---
+      const all = element.querySelectorAll("*");
+      const original = [];
+      all.forEach((el) => {
+        const style = getComputedStyle(el);
+        for (const prop of [
+          "color",
+          "backgroundColor",
+          "borderColor",
+          "borderTopColor",
+          "borderRightColor",
+          "borderBottomColor",
+          "borderLeftColor",
+        ]) {
+          const val = style.getPropertyValue(prop);
+          if (val && val.includes("oklch(")) {
+            // păstrăm valoarea originală
+            original.push([el, prop, el.style[prop]]);
+            // browserul convertește automat în rgb dacă îl aplicăm direct
+            el.style[prop] = val;
+            const rgb = getComputedStyle(el).getPropertyValue(prop);
+            el.style[prop] = rgb;
+          }
+        }
       });
 
-      // Așteaptă puțin
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Folosește html2canvas din window (acum este disponibil)
-      const canvas = await window.html2canvas(element, {
-        scale: 2,
-        useCORS: true,
+      // --- Captură ---
+      const dataUrl = await htmlToImage.toPng(element, {
+        quality: 1,
+        pixelRatio: 3,
         backgroundColor: "#ffffff",
-        logging: false,
+        cacheBust: true,
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
+      // --- Restaurăm culorile originale ---
+      original.forEach(([el, prop, val]) => (el.style[prop] = val));
+      hiddenEls.forEach((el) => (el.style.visibility = "visible"));
+      document.body.style.cursor = originalCursor;
 
+      // --- Generează PDF ---
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((r) => (img.onload = r));
+
       const pageWidth = 210;
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      const pageHeight = (img.height * pageWidth) / img.width;
+      pdf.addImage(img, "PNG", 0, 0, pageWidth, pageHeight, "", "FAST");
       pdf.save("DanutStriblea_CV.pdf");
-
-      // Restabilește butoanele
-      elementsToHide.forEach((el) => {
-        el.style.visibility = "visible";
-      });
-
-      document.body.style.cursor = originalCursor;
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-
-      // Fallback la window.print() dacă nu merge
-      alert("Se folosește metoda alternativă...");
-      window.print();
+    } catch (err) {
+      console.error("Eroare la generarea PDF:", err);
+      alert("Eroare PDF — vezi consola pentru detalii.");
+      document.body.style.cursor = "default";
     }
   };
 
