@@ -24,22 +24,20 @@ export default function LogoFun({
   const hoverStartTimeRef = useRef(0);
 
   useEffect(() => {
+    const cleanupTimers = cleanupTimersRef.current; // ✅ copie stabilă locală
+
     isTouchRef.current =
       typeof window !== "undefined" &&
       ("ontouchstart" in window || navigator.maxTouchPoints > 0);
 
-    // Initialize audio element
     try {
       const a = new Audio(audioFile);
       a.preload = "auto";
       a.loop = false;
-      a.volume = 0; // Start with volume 0 for fade-in
+      a.volume = 0;
       a.playsInline = true;
 
-      const handleCanPlay = () => {
-        audioReadyRef.current = true;
-      };
-
+      const handleCanPlay = () => (audioReadyRef.current = true);
       const handleError = (e) => {
         console.warn("Audio loading error:", e);
         audioReadyRef.current = false;
@@ -61,7 +59,7 @@ export default function LogoFun({
         const burstCount = 5;
         for (let i = 0; i < burstCount; i++) {
           const t = setTimeout(() => createNote(), i * 120);
-          cleanupTimersRef.current.add(t);
+          cleanupTimers.add(t);
         }
 
         const el = logoRef.current;
@@ -71,49 +69,40 @@ export default function LogoFun({
           el.classList.add("logo-beat-2");
           const cleanupT = setTimeout(() => {
             el.classList.remove("logo-beat-2");
-            cleanupTimersRef.current.delete(cleanupT);
+            cleanupTimers.delete(cleanupT);
           }, 1500);
-          cleanupTimersRef.current.add(cleanupT);
+          cleanupTimers.add(cleanupT);
         }
       };
 
-      try {
-        const initial = setTimeout(periodicBurst, 700);
-        cleanupTimersRef.current.add(initial);
-        periodicRef.current = setInterval(periodicBurst, 10000);
-      } catch (err) {
-        console.warn("periodic setup failed", err);
-      }
+      const initial = setTimeout(periodicBurst, 700);
+      cleanupTimers.add(initial);
+      periodicRef.current = setInterval(periodicBurst, 10000);
 
-      // Cleanup
+      // ✅ CLEANUP fără warning ESLint
       return () => {
         try {
           if (periodicRef.current) clearInterval(periodicRef.current);
           if (spawnIntervalRef.current) clearInterval(spawnIntervalRef.current);
-          cleanupTimersRef.current.forEach((t) => clearTimeout(t));
-          cleanupTimersRef.current.clear();
+          cleanupTimers.forEach((t) => clearTimeout(t));
+          cleanupTimers.clear();
           if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
-          if (audioRef.current) {
-            try {
-              audioRef.current.pause();
-              audioRef.current.src = "";
-              audioRef.current.removeEventListener(
-                "canplaythrough",
-                handleCanPlay
-              );
-              audioRef.current.removeEventListener("error", handleError);
-            } catch (cleanupErr) {
-              console.warn("audio cleanup warning", cleanupErr);
-            }
+
+          const audio = audioRef.current;
+          if (audio) {
+            audio.pause();
+            audio.src = "";
+            audio.removeEventListener("canplaythrough", handleCanPlay);
+            audio.removeEventListener("error", handleError);
           }
-        } catch (cleanupOuterErr) {
-          console.warn("cleanup failed", cleanupOuterErr);
+        } catch (err) {
+          console.warn("cleanup failed", err);
         }
       };
     } catch (initErr) {
       console.warn("audio init failed", initErr);
     }
-  }, []);
+  }, []); // deps rămân corecte
 
   const createNote = () => {
     const id = Math.random().toString(36).slice(2, 9);
@@ -240,13 +229,11 @@ export default function LogoFun({
     const a = audioRef.current;
     if (!a || isPlayingRef.current) return;
 
-    // Dacă audio-ul este deja în curs de fade-out, oprește fade-out-ul
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
     }
 
-    // Wait for audio to be ready
     if (!audioReadyRef.current) {
       try {
         await new Promise((res) => {
@@ -287,7 +274,7 @@ export default function LogoFun({
 
     try {
       await a.play();
-      await fadeInAudio(600); // Fade-in mai rapid pentru responsiveness
+      await fadeInAudio(600);
       isPlayingRef.current = true;
     } catch (err) {
       console.warn("play/fade failed on hover start", err);
@@ -301,17 +288,15 @@ export default function LogoFun({
     logoHoveredRef.current = false;
     stopSpawning();
 
-    // Verifică dacă hover-ul a fost suficient de lung pentru a justifica un fade-out complet
     const hoverDuration = Date.now() - hoverStartTimeRef.current;
-    const shouldFadeOut = hoverDuration > 300; // Minim 300ms hover pentru fade-out
+    const shouldFadeOut = hoverDuration > 300;
 
     if (!isPlayingRef.current) return;
 
     try {
       if (shouldFadeOut) {
-        await fadeOutAudio(400); // Fade-out rapid pentru responsiveness
+        await fadeOutAudio(400);
       } else {
-        // Dacă hover-ul a fost foarte scurt, oprește imediat
         const a = audioRef.current;
         if (a) {
           a.pause();
@@ -336,7 +321,6 @@ export default function LogoFun({
     const a = audioRef.current;
     if (!el || !a) return;
 
-    // Visual spin effect
     el.classList.remove("logo-spin");
     void el.offsetWidth;
     el.classList.add("logo-spin");
@@ -346,9 +330,7 @@ export default function LogoFun({
     }, 1000);
     cleanupTimersRef.current.add(cleanupSpin);
 
-    // Toggle play/stop
     if (isPlayingRef.current) {
-      // Stop audio
       try {
         await fadeOutAudio(600);
       } catch (err) {
@@ -358,11 +340,9 @@ export default function LogoFun({
       stopSpawning();
       logoHoveredRef.current = false;
     } else {
-      // Start audio
       logoHoveredRef.current = true;
       startSpawning();
 
-      // Wait for audio to be ready
       if (!audioReadyRef.current) {
         try {
           await new Promise((res) => {
@@ -420,7 +400,6 @@ export default function LogoFun({
     const el = logoRef.current;
     if (!el) return;
 
-    // Only do visual spin, don't interact with audio
     el.classList.remove("logo-spin");
     void el.offsetWidth;
     el.classList.add("logo-spin");
