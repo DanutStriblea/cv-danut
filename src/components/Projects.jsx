@@ -210,8 +210,11 @@ export default function Projects() {
             : renderDesktopLink(project, idx)
         )}
 
-        <li className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-2 relative">
-          <LogoFun className="w-24 sm:w-30" noteContainerClass="" />
+        <li className="flex justify-center mt-1 sm:mt-2 mb-1 sm:mb-2 relative print:mt-0 print:mb-0">
+          <LogoFun
+            className={`${isMobile ? "w-24 print:w-16" : "w-24 sm:w-30"}`}
+            noteContainerClass=""
+          />
         </li>
       </ul>
     </div>

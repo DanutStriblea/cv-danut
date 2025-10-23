@@ -260,3 +260,88 @@ body,
     align-self: start !important;
   }
 }
+
+/* === FIX — CONTACT COMPACT ÎN PRINT VIEW MOBILE === */
+@media print and (max-width: 768px) {
+  /* Containerul de contact general */
+  .w-full.px-4.py-3.flex.flex-col.gap-3.text-gray-700.text-xs {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    gap: 2px !important; /* mai mic între cele două rânduri */
+  }
+
+  /* Ambele rânduri din contact */
+  .w-full.px-4.py-3.flex.flex-col.gap-3.text-gray-700.text-xs > div {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Fiecare celulă (icon + text) */
+  .w-full.px-4.py-3.flex.flex-col.gap-3.text-gray-700.text-xs
+    .flex.items-center.gap-1\.5.justify-center.flex-1 {
+    gap: 2px !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Iconițe — ușor mai mici */
+  .w-full.px-4.py-3.flex.flex-col.gap-3.text-gray-700.text-xs svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* Eliminăm eventualul spațiu de jos */
+  .relative.z-10.w-full.bg-slate-100.shadow-sm {
+    margin-bottom: 2px !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+/* === FIX — Profil compact în print view (mobile) === */
+@media print and (max-width: 768px) {
+  /* Container general al secțiunii Profil */
+  .w-full.px-4.mb-1.mt-4 {
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
+    padding: 0 !important;
+  }
+
+  /* Titlul "Profil" — mai mic și cu spațiu redus */
+  .w-full.px-4.mb-1.mt-4 .text-center.mb-4 {
+    margin-bottom: 2px !important;
+  }
+
+  .w-full.px-4.mb-1.mt-4 h2.bg-slate-300 {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    border-radius: 4px !important;
+    margin: 0 auto 2px auto !important;
+    width: 100% !important;
+  }
+
+  /* Poza — ușor mai mică și mai aproape de text */
+  .w-full.px-4.mb-1.mt-4 .flex.justify-center.mb-4 {
+    margin-bottom: 4px !important;
+  }
+
+  .w-full.px-4.mb-1.mt-4 .relative.w-24.h-24 {
+    width: 78px !important;
+    height: 78px !important;
+  }
+
+  .w-full.px-4.mb-1.mt-4 .relative.w-24.h-24 img {
+    width: 78px !important;
+    height: 78px !important;
+  }
+
+  /* Textul de profil — mai compact, lizibil, fără spațiu inutil */
+  .w-full.px-4.mb-1.mt-4 .text-center p.text-xs.text-gray-700.leading-relaxed {
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
+    padding: 0 8px !important;
+  }
+}

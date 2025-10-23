@@ -34,7 +34,7 @@ export default function Contact() {
 
             <div className="flex items-center gap-1.5 justify-center flex-1">
               <PhoneIcon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-              <span>077205910</span>
+              <span>0772059190</span>
             </div>
 
             <div className="flex items-center gap-1.5 justify-center flex-1">
