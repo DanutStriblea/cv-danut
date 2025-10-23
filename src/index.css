@@ -198,3 +198,65 @@ body,
     min-height: auto !important;
   }
 }
+
+/* === FIX FINAL — "Experiență profesională" 3 coloane în PRINT === */
+@media print {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important; /* 3 coloane fixe */
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Corectăm și ultimele 3 carduri (Limbi, Pasiuni, Permis) */
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > div:last-child {
+    grid-column: span 1 !important;
+    align-self: start !important;
+  }
+
+  /* Micșorăm ușor marginile pentru a încăpea perfect pe A4 */
+  section.px-4.sm\:px-6.pt-2.w-full.pb-6 {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+/* === PRINT VIEW — Ajustare fina spatiere carduri Educatie / Abilitati / Proiecte === */
+@media print {
+  /* === 1️⃣ EDUCAȚIE: mai mult spațiu între fiecare element din listă === */
+  .card-print-fix ul.space-y-2.text-xs.text-center.text-gray-500 > li {
+    margin-bottom: 10px !important; /* crește spațiul dintre educații */
+  }
+
+  /* === 2️⃣ ABILITĂȚI: spațiu mai mare între linii === */
+  .card-print-fix ul.text-gray-600.text-xs.space-y-1.px-2 li {
+    line-height: 1.55 !important; /* mai aerisit, dar echilibrat */
+    margin-bottom: 2px !important;
+  }
+
+  /* === 3️⃣ PROIECTE: deplasează conținutul puțin mai jos (doar in print) === */
+  .project-mobile-restrict.card-print-fix ul {
+    margin-top: 12px !important; /* coboară tot conținutul cu 2 spații */
+  }
+
+  /* ușoară armonizare a marginilor interne ale cardurilor */
+  .bg-slate-100.rounded-lg.card-print-fix {
+    padding-top: 28px !important;
+    padding-bottom: 10px !important;
+  }
+}
+
+/* === TABLET VIEW — 3 coloane pentru Experiență profesională === */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: 1fr 1fr 1fr !important; /* forțează 3 coloane */
+    gap: 12px !important; /* distanță echilibrată între carduri */
+  }
+
+  /* Corectăm și înălțimile pentru aliniere vizuală */
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > div {
+    align-self: start !important;
+  }
+}
