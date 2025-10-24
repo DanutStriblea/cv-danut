@@ -259,7 +259,10 @@ export default function WorkExperience() {
         {WORKS.map(({ period, role, place, details }, idx) => (
           <div
             key={idx}
-            className="bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue"
+            className={
+              // ADDED: card-print-fix + transition-shadow + desktop hover shadow color
+              "bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+            }
             onMouseEnter={() => handleEnter(period)}
             onMouseLeave={() => handleLeave(period)}
           >
@@ -274,7 +277,12 @@ export default function WorkExperience() {
 
         {/* Limbi, Pasiuni, Permis */}
         <div className="flex flex-col gap-3">
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
+          <div
+            className={
+              // ADDED: la cardul Limbi
+              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+            }
+          >
             <div className="space-y-1">
               <div>
                 <span>Engleză</span>
@@ -297,7 +305,12 @@ export default function WorkExperience() {
             </div>
           </div>
 
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue">
+          <div
+            className={
+              // ADDED: la cardul Pasiuni
+              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+            }
+          >
             <div className="flex items-center gap-3 text-gray-700">
               <span className="font-bold">Pasiuni:</span>
               <div className="flex gap-3 text-xl">
@@ -310,7 +323,12 @@ export default function WorkExperience() {
             </div>
           </div>
 
-          <div className="bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-hover-blue mb-4">
+          <div
+            className={
+              // ADDED: la cardul Permis
+              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10 mb-4"
+            }
+          >
             <p className="font-bold">
               Permis auto: <span className="font-normal">Categoria B</span>
             </p>

@@ -352,17 +352,20 @@ body,
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 12px !important;
-    align-items: stretch !important; /* toate cardurile aceeași înălțime */
+    align-items: stretch !important;
   }
 
-  /* cardurile (fără a distorsiona textul interior) */
+  /* Păstrăm item-urile întinse, dar NU mai forțăm display:block peste tot */
   .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > div {
     align-self: stretch !important;
-    display: block !important; /* revine la flux normal, NU flex */
     height: 100% !important;
   }
 
-  /* mic reglaj pentru aspect compact, fără spațiu suplimentar între linii */
+  /* Doar item-urile care NU sunt deja flex devin block */
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > div:not(.flex) {
+    display: block !important;
+  }
+
   .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 p,
   .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 li {
     line-height: 1.35 !important;
