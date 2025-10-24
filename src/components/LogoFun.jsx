@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import logoSrc from "../assets/logo.png";
 import audioFile from "../assets/DrinksAndFlowers.mp3";
 
-const NOTES = ["♪", "♫", "♩", "♬", "♭", "♯"];
+const NOTES = ["♪", "♫", "♩", "♬", "♭", "𝄞", "𝄢", "♯"];
 const MASTER_VOL = 0.6;
 
 export default function LogoFun({
@@ -14,8 +14,10 @@ export default function LogoFun({
   const spawnIntervalRef = useRef(null);
   const periodicRef = useRef(null);
   const cleanupTimersRef = useRef(new Set());
+
   const audioRef = useRef(null);
   const fadeIntervalRef = useRef(null);
+
   const logoRef = useRef(null);
   const logoHoveredRef = useRef(false);
   const isTouchRef = useRef(false);
@@ -24,7 +26,7 @@ export default function LogoFun({
   const hoverStartTimeRef = useRef(0);
 
   useEffect(() => {
-    const cleanupTimers = cleanupTimersRef.current; // ✅ copie stabilă locală
+    const cleanupTimers = cleanupTimersRef.current;
 
     isTouchRef.current =
       typeof window !== "undefined" &&
@@ -45,7 +47,6 @@ export default function LogoFun({
 
       a.addEventListener("canplaythrough", handleCanPlay);
       a.addEventListener("error", handleError);
-
       audioRef.current = a;
 
       try {
@@ -54,7 +55,7 @@ export default function LogoFun({
         console.warn("audio load() failed (non-fatal)", loadErr);
       }
 
-      // Periodic visual burst
+      // “burst” vizual periodic când nu e interacțiune
       const periodicBurst = () => {
         const burstCount = 5;
         for (let i = 0; i < burstCount; i++) {
@@ -63,7 +64,7 @@ export default function LogoFun({
         }
 
         const el = logoRef.current;
-        if (el && !logoHoveredRef.current) {
+        if (el && !logoHoveredRef.current && !isPlayingRef.current) {
           el.classList.remove("logo-beat-2");
           void el.offsetWidth;
           el.classList.add("logo-beat-2");
@@ -79,7 +80,6 @@ export default function LogoFun({
       cleanupTimers.add(initial);
       periodicRef.current = setInterval(periodicBurst, 10000);
 
-      // ✅ CLEANUP fără warning ESLint
       return () => {
         try {
           if (periodicRef.current) clearInterval(periodicRef.current);
@@ -102,8 +102,9 @@ export default function LogoFun({
     } catch (initErr) {
       console.warn("audio init failed", initErr);
     }
-  }, []); // deps rămân corecte
+  }, []);
 
+  // ===== NOTE EFERVESCENTE =====
   const createNote = () => {
     const id = Math.random().toString(36).slice(2, 9);
     const left = `${20 + Math.random() * 60}%`;
@@ -139,6 +140,7 @@ export default function LogoFun({
     spawnIntervalRef.current = null;
   };
 
+  // ===== AUDIO FADES =====
   const fadeInAudio = (duration = 600) =>
     new Promise((res) => {
       const a = audioRef.current;
@@ -218,48 +220,34 @@ export default function LogoFun({
       }, stepTime);
     });
 
-  // ===== DESKTOP BEHAVIOR =====
-  const onLogoPointerEnter = async () => {
-    if (isTouchRef.current) return;
-
-    logoHoveredRef.current = true;
-    hoverStartTimeRef.current = Date.now();
-    startSpawning();
-
-    const a = audioRef.current;
-    if (!a || isPlayingRef.current) return;
-
-    if (fadeIntervalRef.current) {
-      clearInterval(fadeIntervalRef.current);
-      fadeIntervalRef.current = null;
-    }
-
-    if (!audioReadyRef.current) {
-      try {
-        await new Promise((res) => {
-          if (!a) return res();
-          if (a.readyState >= 3) {
-            audioReadyRef.current = true;
-            return res();
-          }
-          const onLoaded = () => {
-            a.removeEventListener("canplaythrough", onLoaded);
-            audioReadyRef.current = true;
-            res();
-          };
-          a.addEventListener("canplaythrough", onLoaded, { once: true });
-
-          const timeout = setTimeout(() => {
-            a.removeEventListener("canplaythrough", onLoaded);
-            res();
-          }, 2000);
-          cleanupTimersRef.current.add(timeout);
-        });
-      } catch (err) {
-        console.warn("Audio ready check failed:", err);
-        return;
+  // ===== HELPERE: play/stop legate de note =====
+  const ensureReady = async (a) => {
+    if (!a) return;
+    if (audioReadyRef.current) return;
+    await new Promise((res) => {
+      if (!a) return res();
+      if (a.readyState >= 3) {
+        audioReadyRef.current = true;
+        return res();
       }
-    }
+      const onLoaded = () => {
+        a.removeEventListener("canplaythrough", onLoaded);
+        audioReadyRef.current = true;
+        res();
+      };
+      a.addEventListener("canplaythrough", onLoaded, { once: true });
+      const timeout = setTimeout(() => {
+        a.removeEventListener("canplaythrough", onLoaded);
+        res();
+      }, 2000);
+      cleanupTimersRef.current.add(timeout);
+    });
+  };
+
+  const playWithFade = async () => {
+    const a = audioRef.current;
+    if (!a) return;
+    await ensureReady(a);
 
     const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
     const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
@@ -268,155 +256,112 @@ export default function LogoFun({
     try {
       a.currentTime = randomStart;
       a.volume = 0;
-    } catch (timeErr) {
-      console.warn("set currentTime/volume failed", timeErr);
+    } catch {
+      /* noop */
     }
 
     try {
       await a.play();
       await fadeInAudio(600);
       isPlayingRef.current = true;
+      startSpawning(); // <<< notele pornesc cât timp cântă
     } catch (err) {
-      console.warn("play/fade failed on hover start", err);
+      console.warn("play/fade failed:", err);
       isPlayingRef.current = false;
     }
+  };
+
+  const stopWithFade = async (dur = 500) => {
+    if (!isPlayingRef.current) return;
+    try {
+      await fadeOutAudio(dur);
+    } catch (err) {
+      console.warn("fadeOut failed:", err);
+    }
+    isPlayingRef.current = false;
+    stopSpawning(); // <<< oprește notele când nu mai cântă
+  };
+
+  // ===== DESKTOP: hover =====
+  const onLogoPointerEnter = async () => {
+    if (isTouchRef.current) return;
+    logoHoveredRef.current = true;
+    hoverStartTimeRef.current = Date.now();
+    await playWithFade();
   };
 
   const onLogoPointerLeave = async () => {
     if (isTouchRef.current) return;
-
     logoHoveredRef.current = false;
-    stopSpawning();
 
     const hoverDuration = Date.now() - hoverStartTimeRef.current;
     const shouldFadeOut = hoverDuration > 300;
-
     if (!isPlayingRef.current) return;
 
-    try {
-      if (shouldFadeOut) {
-        await fadeOutAudio(400);
-      } else {
-        const a = audioRef.current;
-        if (a) {
+    if (shouldFadeOut) await stopWithFade(400);
+    else {
+      // stop imediat fără fade (scurt hover)
+      const a = audioRef.current;
+      if (a) {
+        try {
           a.pause();
           a.currentTime = 0;
           a.volume = 0;
+        } catch (err) {
+          console.warn("immediate stop failed", err);
         }
-      }
-    } catch (err) {
-      console.warn("fade out failed on hover end", err);
-    }
-    isPlayingRef.current = false;
-  };
-
-  // ===== MOBILE BEHAVIOR =====
-  const handleMobileTap = async (e) => {
-    if (!isTouchRef.current) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const el = logoRef.current;
-    const a = audioRef.current;
-    if (!el || !a) return;
-
-    el.classList.remove("logo-spin");
-    void el.offsetWidth;
-    el.classList.add("logo-spin");
-    const cleanupSpin = setTimeout(() => {
-      el.classList.remove("logo-spin");
-      cleanupTimersRef.current.delete(cleanupSpin);
-    }, 1000);
-    cleanupTimersRef.current.add(cleanupSpin);
-
-    if (isPlayingRef.current) {
-      try {
-        await fadeOutAudio(600);
-      } catch (err) {
-        console.warn("fadeOut failed on mobile stop", err);
       }
       isPlayingRef.current = false;
       stopSpawning();
-      logoHoveredRef.current = false;
-    } else {
-      logoHoveredRef.current = true;
-      startSpawning();
-
-      if (!audioReadyRef.current) {
-        try {
-          await new Promise((res) => {
-            if (!a) return res();
-            if (a.readyState >= 3) {
-              audioReadyRef.current = true;
-              return res();
-            }
-            const onLoaded = () => {
-              a.removeEventListener("canplaythrough", onLoaded);
-              audioReadyRef.current = true;
-              res();
-            };
-            a.addEventListener("canplaythrough", onLoaded, { once: true });
-
-            const timeout = setTimeout(() => {
-              a.removeEventListener("canplaythrough", onLoaded);
-              res();
-            }, 2000);
-            cleanupTimersRef.current.add(timeout);
-          });
-        } catch (err) {
-          console.warn("Audio ready check failed on mobile:", err);
-        }
-      }
-
-      const dur = isFinite(a.duration) && a.duration > 0 ? a.duration : 0;
-      const maxStart = dur > 0.6 ? Math.max(0, dur - 0.5) : 0;
-      const randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
-
-      try {
-        a.currentTime = randomStart;
-        a.volume = 0;
-      } catch (timeErr) {
-        console.warn("set currentTime/volume failed on mobile", timeErr);
-      }
-
-      try {
-        await a.play();
-        await fadeInAudio(600);
-        isPlayingRef.current = true;
-      } catch (playErr) {
-        console.warn("play() failed on mobile:", playErr);
-      }
     }
   };
 
-  // ===== DESKTOP CLICK (Visual only) =====
-  const handleDesktopClick = (e) => {
-    if (isTouchRef.current) return;
-
+  // ===== TABLET/MOBILE: TAP = TOGGLE (play/pause cu fade) =====
+  const onTouchToggle = async (e) => {
+    if (!isTouchRef.current) return;
     e.preventDefault();
     e.stopPropagation();
 
     const el = logoRef.current;
-    if (!el) return;
+    if (el) {
+      el.classList.remove("logo-spin");
+      void el.offsetWidth;
+      el.classList.add("logo-spin");
+      const cleanup = setTimeout(() => {
+        el.classList.remove("logo-spin");
+        cleanupTimersRef.current.delete(cleanup);
+      }, 800);
+      cleanupTimersRef.current.add(cleanup);
+    }
 
+    if (isPlayingRef.current) {
+      await stopWithFade(600);
+    } else {
+      await playWithFade();
+    }
+  };
+
+  // ===== DESKTOP CLICK: doar efect vizual =====
+  const handleDesktopClick = (e) => {
+    if (isTouchRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = logoRef.current;
+    if (!el) return;
     el.classList.remove("logo-spin");
     void el.offsetWidth;
     el.classList.add("logo-spin");
     const cleanup = setTimeout(() => {
       el.classList.remove("logo-spin");
       cleanupTimersRef.current.delete(cleanup);
-    }, 1000);
+    }, 800);
     cleanupTimersRef.current.add(cleanup);
   };
 
-  // ===== UNIFIED HANDLER =====
-  const handlePointerDown = (e) => {
-    if (isTouchRef.current) {
-      handleMobileTap(e);
-    } else {
-      handleDesktopClick(e);
-    }
+  // ===== Handlere unificate =====
+  const onPointerDown = (e) => {
+    if (isTouchRef.current) onTouchToggle(e);
+    else handleDesktopClick(e);
   };
 
   return (
@@ -431,7 +376,7 @@ export default function LogoFun({
         className="object-contain opacity-50 cursor-pointer select-none transition-transform duration-200 hover:scale-105"
         onPointerEnter={onLogoPointerEnter}
         onPointerLeave={onLogoPointerLeave}
-        onPointerDown={handlePointerDown}
+        onPointerDown={onPointerDown}
       />
 
       <div
@@ -484,7 +429,7 @@ export default function LogoFun({
           100% { transform: rotateY(360deg); }
         }
         .logo-spin {
-          animation: logoSpin 1s ease both;
+          animation: logoSpin 0.8s ease both;
           transform-style: preserve-3d;
           will-change: transform;
         }

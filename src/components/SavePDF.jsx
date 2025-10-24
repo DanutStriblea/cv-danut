@@ -5,30 +5,32 @@ import * as htmlToImage from "html-to-image";
 
 export default function SavePDF({ className = "" }) {
   const handleSavePDF = async () => {
+    const root = document.documentElement;
+    const originalCursor = document.body.style.cursor;
+
     try {
-      const element = document.querySelector(".a4-frame");
-      if (!element) {
+      const el = document.querySelector(".a4-frame");
+      if (!el) {
         alert("Nu s-a găsit conținutul CV-ului");
         return;
       }
 
-      const originalCursor = document.body.style.cursor;
-      document.body.style.cursor = "wait";
+      // Activează modul 'exporting' DOAR pe durata capturii
+      root.classList.add("exporting");
 
-      // Ascunde butoanele interactive
-      const hiddenEls = document.querySelectorAll(".print-hidden");
-      hiddenEls.forEach((el) => (el.style.visibility = "hidden"));
+      // Cursor busy
+      document.body.style.cursor = "wait";
 
       // Așteaptă fonturile
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
 
-      // --- CONVERSIE GLOBALĂ OKLCH -> RGB ---
-      const all = element.querySelectorAll("*");
+      // Conversie OKLCH -> RGB (local)
+      const all = el.querySelectorAll("*");
       const original = [];
-      all.forEach((el) => {
-        const style = getComputedStyle(el);
+      all.forEach((node) => {
+        const style = getComputedStyle(node);
         for (const prop of [
           "color",
           "backgroundColor",
@@ -40,48 +42,60 @@ export default function SavePDF({ className = "" }) {
         ]) {
           const val = style.getPropertyValue(prop);
           if (val && val.includes("oklch(")) {
-            // păstrăm valoarea originală
-            original.push([el, prop, el.style[prop]]);
-            // browserul convertește automat în rgb dacă îl aplicăm direct
-            el.style[prop] = val;
-            const rgb = getComputedStyle(el).getPropertyValue(prop);
-            el.style[prop] = rgb;
+            original.push([node, prop, node.style.getPropertyValue(prop)]);
+            node.style.setProperty(prop, val);
+            const rgb = getComputedStyle(node).getPropertyValue(prop);
+            node.style.setProperty(prop, rgb);
           }
         }
       });
 
-      // --- Captură ---
-      const dataUrl = await htmlToImage.toPng(element, {
+      // Captură la rezoluție mare
+      const dataUrl = await htmlToImage.toPng(el, {
         quality: 1,
         pixelRatio: 3,
         backgroundColor: "#ffffff",
         cacheBust: true,
       });
 
-      // --- Restaurăm culorile originale ---
-      original.forEach(([el, prop, val]) => (el.style[prop] = val));
-      hiddenEls.forEach((el) => (el.style.visibility = "visible"));
-      document.body.style.cursor = originalCursor;
+      // Restaurează stilurile locale
+      original.forEach(([node, prop, val]) => {
+        if (val) node.style.setProperty(prop, val);
+        else node.style.removeProperty(prop);
+      });
 
-      // --- Generează PDF ---
+      // Generează PDF A4
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
-
       const img = new Image();
       img.src = dataUrl;
       await new Promise((r) => (img.onload = r));
 
-      const pageWidth = 210;
-      const pageHeight = (img.height * pageWidth) / img.width;
-      pdf.addImage(img, "PNG", 0, 0, pageWidth, pageHeight, "", "FAST");
+      // Convert CSS px (96dpi) -> mm
+      const pxToMm = (px) => (px * 25.4) / 96;
+      const imgWmm = pxToMm(img.width);
+      const imgHmm = pxToMm(img.height);
+
+      const pageW = 210;
+      const pageH = 297;
+      const scale = Math.min(pageW / imgWmm, pageH / imgHmm);
+      const w = imgWmm * scale;
+      const h = imgHmm * scale;
+      const x = (pageW - w) / 2;
+      const y = (pageH - h) / 2;
+
+      pdf.addImage(img, "PNG", x, y, w, h, "", "FAST");
       pdf.save("DanutStriblea_CV.pdf");
-    } catch (err) {
-      console.error("Eroare la generarea PDF:", err);
+    } catch (e) {
+      console.error("Eroare la generarea PDF:", e);
       alert("Eroare PDF — vezi consola pentru detalii.");
-      document.body.style.cursor = "default";
+    } finally {
+      // Dezactivează modul exporting și cursorul
+      document.documentElement.classList.remove("exporting");
+      document.body.style.cursor = originalCursor;
     }
   };
 

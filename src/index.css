@@ -372,3 +372,25 @@ body,
     margin-bottom: 2px !important;
   }
 }
+
+/* === Export doar pe mobil: folosește layout A4 ca pe desktop === */
+@media screen and (max-width: 768px) {
+  :root.exporting .a4-frame {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  :root.exporting body,
+  :root.exporting #root {
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  /* Ascunde elemente interactive doar în timpul exportului */
+  :root.exporting .print-hidden {
+    display: none !important;
+  }
+}
