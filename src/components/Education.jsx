@@ -247,7 +247,7 @@ export default function Education() {
 
   return (
     <div
-      className="flex-1 w-full relative bg-slate-100 rounded-lg p-4 pt-10 pb-0 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-blue-500/10 card-print-fix"
+      className="flex-1 w-full relative bg-slate-100 rounded-lg p-4 pt-10 pb-0 shadow-lg transition-shadow duration-220 hover:shadow-xl hover:shadow-slate-300 card-print-fix"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

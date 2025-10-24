@@ -261,7 +261,7 @@ export default function WorkExperience() {
             key={idx}
             className={
               // ADDED: card-print-fix + transition-shadow + desktop hover shadow color
-              "bg-slate-100 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+              "bg-slate-100 rounded-md shadow-lg px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-slate-300"
             }
             onMouseEnter={() => handleEnter(period)}
             onMouseLeave={() => handleLeave(period)}
@@ -280,7 +280,7 @@ export default function WorkExperience() {
           <div
             className={
               // ADDED: la cardul Limbi
-              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+              "bg-slate-200 rounded-md shadow-lg px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-slate-300"
             }
           >
             <div className="space-y-1">
@@ -308,7 +308,7 @@ export default function WorkExperience() {
           <div
             className={
               // ADDED: la cardul Pasiuni
-              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10"
+              "bg-slate-200 rounded-md shadow-lg px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-slate-300"
             }
           >
             <div className="flex items-center gap-3 text-gray-700">
@@ -326,7 +326,7 @@ export default function WorkExperience() {
           <div
             className={
               // ADDED: la cardul Permis
-              "bg-slate-200 rounded-md shadow-sm px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-blue-500/10 mb-4"
+              "bg-slate-200 rounded-md shadow-lg px-3 py-2 text-left card-print-fix transition-shadow lg:hover:shadow-slate-300 mb-4"
             }
           >
             <p className="font-bold">

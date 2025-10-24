@@ -236,7 +236,7 @@ export default function Skills() {
   return (
     <div
       className="flex-1 relative bg-slate-100 rounded-lg p-4 pt-10 shadow-lg transition-shadow 
-      duration-220 hover:shadow-xl hover:shadow-blue-500/10 card-print-fix"
+      duration-220 hover:shadow-xl hover:shadow-slate-300 card-print-fix"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

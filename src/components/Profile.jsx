@@ -50,7 +50,7 @@ export default function Profile() {
         {" "}
         {/* Added mt-4 for space from contacts */}
         {/* Chenarul "Profil" - latime completa, centrat */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-4 ">
           <h2 className="bg-slate-300 py-2 rounded text-lg font-semibold font-montserrat w-full">
             Profil
           </h2>

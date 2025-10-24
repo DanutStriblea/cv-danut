@@ -187,7 +187,7 @@ export default function Projects() {
       flex-1 w-full relative bg-slate-100 rounded-lg
       p-3 sm:p-6 pt-6 sm:pt-10 pb-1 sm:pb-2
       shadow-lg transition-shadow duration-220
-      hover:shadow-xl hover:shadow-blue-500/10
+      hover:shadow-xl hover:shadow-slate-300
       project-mobile-restrict card-print-fix
     "
     >
