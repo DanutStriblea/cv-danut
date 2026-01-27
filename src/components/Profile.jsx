@@ -43,19 +43,16 @@ export default function Profile() {
     }
   };
 
-  // Mobile layout: Chenar Profil -> Poza -> Text (vertical)
+  // Mobile layout
   if (isMobile) {
     return (
       <div className="w-full px-4 mb-1 mt-4">
-        {" "}
-        {/* Added mt-4 for space from contacts */}
-        {/* Chenarul "Profil" - latime completa, centrat */}
-        <div className="text-center mb-4 ">
+        <div className="text-center mb-4">
           <h2 className="bg-slate-300 py-2 rounded text-lg font-semibold font-montserrat w-full">
             Profil
           </h2>
         </div>
-        {/* Poza - centrată */}
+
         <div className="flex justify-center mb-4">
           <div
             className="relative w-24 h-24"
@@ -65,7 +62,7 @@ export default function Profile() {
             <img
               src={profilePic}
               alt="Dănuț Striblea"
-              className="w-24 h-24 rounded-full object-cover transform rotate-[-20deg] scale-x-[-1]"
+              className="w-24 h-24 rounded-full object-cover"
             />
 
             <img
@@ -79,12 +76,12 @@ export default function Profile() {
               }
               style={{
                 pointerEvents: "none",
-                transform: "rotate(10deg) scaleX(-1) scale(0.96)",
+                transform: "scale(0.96)",
               }}
             />
           </div>
         </div>
-        {/* Textul - latime completa, centrat */}
+
         <div className="text-center">
           <p className="text-xs text-gray-700 leading-relaxed">
             Experiență în producție muzicală și gastronomie. Pasionat de IT,
@@ -96,10 +93,9 @@ export default function Profile() {
     );
   }
 
-  // Desktop layout: original (imagine + text orizontal)
+  // Desktop layout
   return (
     <div className="flex flex-row items-start gap-10 mt-5.5 bg-white w-full px-22 mb-1">
-      {/* Poza */}
       <div
         className="relative w-28 h-28 -mt-2"
         onMouseEnter={handleMouseEnter}
@@ -108,7 +104,11 @@ export default function Profile() {
         <img
           src={profilePic}
           alt="Dănuț Striblea"
-          className="w-28 h-28 rounded-full object-cover transform rotate-[-20deg] scale-x-[-1]"
+          className="w-28 h-28 rounded-full object-cover"
+          style={{
+            objectPosition: "center 19%",
+            transform: "scale(0.97)",
+          }}
         />
 
         <img
@@ -122,12 +122,11 @@ export default function Profile() {
           }
           style={{
             pointerEvents: "none",
-            transform: "rotate(10deg) scaleX(-1) scale(0.96)",
+            transform: "scale(0.96)",
           }}
         />
       </div>
 
-      {/* Textul cu chenar "Profil" centrat */}
       <div className="flex-1 text-center">
         <h2 className="bg-slate-300 py-1 rounded text-lg font-semibold font-montserrat mb-2">
           Profil
